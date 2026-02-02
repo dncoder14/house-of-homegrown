@@ -142,7 +142,7 @@ const Shop = () => {
         </div>
 
         <div className="flex flex-col lg:flex-row gap-8">
-          <aside className="lg:w-64 space-y-6">
+          <aside className="lg:w-64 lg:sticky lg:top-20 lg:h-[calc(100vh-5rem)] lg:overflow-y-auto space-y-6">
             <Card className="bg-card border-border">
               <CardContent className="p-4">
                 <h3 className="font-semibold text-card-foreground mb-4 flex items-center">
