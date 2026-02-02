@@ -314,7 +314,7 @@ const Profile = () => {
                         return (
                           <div
                             key={order._id}
-                            onClick={() => navigate(`/orders/${order._id}`)}
+                            onClick={() => navigate(`/order/${order._id}`)}
                             className={`p-4 rounded-lg border cursor-pointer hover:shadow-md transition-shadow ${isDark ? 'border-white/10 bg-white/5 hover:bg-white/10' : 'border-earth-beige bg-earth-cream/20 hover:bg-earth-cream/30'}`}
                           >
                             <div className="flex items-center justify-between mb-2">
