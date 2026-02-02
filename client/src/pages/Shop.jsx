@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Filter, Search } from 'lucide-react';
+import { Filter, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Card, CardContent } from '../components/ui/card';
@@ -8,17 +8,23 @@ import ProductCard from '../components/ProductCard';
 import { productsAPI } from '../utils/api';
 import { useTheme } from '../context/ThemeContext';
 
+const ITEMS_PER_PAGE = 12;
+
 const Shop = () => {
   const [products, setProducts] = useState([]);
+  const [allProducts, setAllProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
   const [searchParams, setSearchParams] = useSearchParams();
   const { isDark } = useTheme();
   
   const [filters, setFilters] = useState({
     search: searchParams.get('search') || '',
     category: searchParams.get('category') || '',
-    sort: searchParams.get('sort') || ''
+    sort: searchParams.get('sort') || '',
+    minPrice: searchParams.get('minPrice') || '',
+    maxPrice: searchParams.get('maxPrice') || ''
   });
 
   useEffect(() => {
@@ -30,21 +36,54 @@ const Shop = () => {
     const newSearch = searchParams.get('search') || '';
     const newCategory = searchParams.get('category') || '';
     const newSort = searchParams.get('sort') || '';
+    const newMinPrice = searchParams.get('minPrice') || '';
+    const newMaxPrice = searchParams.get('maxPrice') || '';
     
     setFilters({
       search: newSearch,
       category: newCategory,
-      sort: newSort
+      sort: newSort,
+      minPrice: newMinPrice,
+      maxPrice: newMaxPrice
     });
     
-    fetchProducts({ search: newSearch, category: newCategory, sort: newSort });
+    fetchProducts({ search: newSearch, category: newCategory, sort: newSort, minPrice: newMinPrice, maxPrice: newMaxPrice });
   }, [searchParams]);
 
   const fetchProducts = async (filterParams = filters) => {
     try {
       setLoading(true);
       const response = await productsAPI.getAll(filterParams);
-      setProducts(response.data);
+      let filteredProducts = response.data;
+      
+      // Apply price filter
+      if (filterParams.minPrice || filterParams.maxPrice) {
+        filteredProducts = filteredProducts.filter(product => {
+          const price = product.price;
+          const min = filterParams.minPrice ? Number(filterParams.minPrice) : 0;
+          const max = filterParams.maxPrice ? Number(filterParams.maxPrice) : Infinity;
+          return price >= min && price <= max;
+        });
+      }
+      
+      // Apply sorting
+      if (filterParams.sort) {
+        filteredProducts.sort((a, b) => {
+          switch (filterParams.sort) {
+            case 'price_low':
+              return a.price - b.price;
+            case 'price_high':
+              return b.price - a.price;
+            case 'newest':
+              return new Date(b.createdAt) - new Date(a.createdAt);
+            default:
+              return 0;
+          }
+        });
+      }
+      
+      setAllProducts(filteredProducts);
+      setCurrentPage(1);
     } catch (error) {
       console.error('Error fetching products:', error);
     } finally {
@@ -79,8 +118,19 @@ const Shop = () => {
   };
 
   const clearFilters = () => {
-    setFilters({ search: '', category: '', sort: '' });
+    setFilters({ search: '', category: '', sort: '', minPrice: '', maxPrice: '' });
     setSearchParams({});
+  };
+
+  // Pagination logic
+  const totalPages = Math.ceil(allProducts.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const endIndex = startIndex + ITEMS_PER_PAGE;
+  const currentProducts = allProducts.slice(startIndex, endIndex);
+
+  const goToPage = (page) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   return (
@@ -150,7 +200,34 @@ const Shop = () => {
                     </select>
                   </div>
 
-                  {(filters.search || filters.category || filters.sort) && (
+                  <div>
+                    <label className="text-sm font-medium text-card-foreground mb-2 block">Price Range</label>
+                    <div className="flex space-x-2">
+                      <Input
+                        type="number"
+                        placeholder="Min"
+                        value={filters.minPrice}
+                        onChange={(e) => setFilters({ ...filters, minPrice: e.target.value })}
+                        className="bg-input border-border text-foreground placeholder:text-muted-foreground"
+                      />
+                      <Input
+                        type="number"
+                        placeholder="Max"
+                        value={filters.maxPrice}
+                        onChange={(e) => setFilters({ ...filters, maxPrice: e.target.value })}
+                        className="bg-input border-border text-foreground placeholder:text-muted-foreground"
+                      />
+                    </div>
+                    <Button
+                      onClick={() => updateFilters({ minPrice: filters.minPrice, maxPrice: filters.maxPrice })}
+                      className="w-full mt-2"
+                      size="sm"
+                    >
+                      Apply
+                    </Button>
+                  </div>
+
+                  {(filters.search || filters.category || filters.sort || filters.minPrice || filters.maxPrice) && (
                     <Button
                       variant="outline"
                       onClick={clearFilters}
@@ -167,8 +244,13 @@ const Shop = () => {
           <main className="flex-1">
             <div className="flex items-center justify-between mb-6">
               <p className="text-muted-foreground">
-                {loading ? 'Loading...' : `${products.length} products found`}
+                {loading ? 'Loading...' : `${allProducts.length} products found`}
               </p>
+              {totalPages > 1 && (
+                <p className="text-muted-foreground text-sm">
+                  Page {currentPage} of {totalPages}
+                </p>
+              )}
             </div>
 
             {loading ? (
@@ -181,7 +263,7 @@ const Shop = () => {
                   </div>
                 ))}
               </div>
-            ) : products.length === 0 ? (
+            ) : allProducts.length === 0 ? (
               <div className="text-center py-12">
                 <p className="text-muted-foreground text-lg">No products found matching your criteria.</p>
                 <Button
@@ -193,11 +275,65 @@ const Shop = () => {
                 </Button>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {products.map((product) => (
-                  <ProductCard key={product.id} product={product} />
-                ))}
-              </div>
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {currentProducts.map((product) => (
+                    <ProductCard key={product.id} product={product} />
+                  ))}
+                </div>
+                
+                {/* Pagination */}
+                {totalPages > 1 && (
+                  <div className="flex items-center justify-center space-x-2 mt-8">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => goToPage(currentPage - 1)}
+                      disabled={currentPage === 1}
+                      className="bg-secondary border-border text-secondary-foreground hover:bg-muted"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    
+                    {[...Array(totalPages)].map((_, i) => {
+                      const page = i + 1;
+                      if (
+                        page === 1 ||
+                        page === totalPages ||
+                        (page >= currentPage - 1 && page <= currentPage + 1)
+                      ) {
+                        return (
+                          <Button
+                            key={page}
+                            variant={currentPage === page ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => goToPage(page)}
+                            className={currentPage === page ? "" : "bg-secondary border-border text-secondary-foreground hover:bg-muted"}
+                          >
+                            {page}
+                          </Button>
+                        );
+                      } else if (
+                        page === currentPage - 2 ||
+                        page === currentPage + 2
+                      ) {
+                        return <span key={page} className="text-muted-foreground">...</span>;
+                      }
+                      return null;
+                    })}
+                    
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => goToPage(currentPage + 1)}
+                      disabled={currentPage === totalPages}
+                      className="bg-secondary border-border text-secondary-foreground hover:bg-muted"
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
+              </>
             )}
           </main>
         </div>

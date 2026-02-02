@@ -41,7 +41,7 @@ const Footer = () => {
 
         <div className={`border-t ${isDark ? 'border-border' : 'border-earth-cream/20'} mt-8 pt-8 text-center`}>
           <p className={`${isDark ? 'text-muted-foreground' : 'text-earth-cream/60'}`}>
-            © 2026 House of Homegrown. All rights reserved. Made with ❤️ for sustainable living.
+            © 2026 House of Homegrown. All rights reserved. Made for sustainable living.
           </p>
         </div>
       </div>
