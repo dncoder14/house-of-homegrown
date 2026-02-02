@@ -159,7 +159,7 @@ export const deleteProduct = async (req, res) => {
 
 export const getCategoriesList = async (req, res) => {
   try {
-    const categories = ['clothing', 'home', 'wellness', 'beauty', 'accessories'];
+    const categories = ['clothing', 'home', 'accessories'];
     res.json(categories);
   } catch (error) {
     res.status(500).json({ message: error.message });
