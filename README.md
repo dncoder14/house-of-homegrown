@@ -237,7 +237,3 @@ npm start
 ## Support
 
 For questions or issues, contact: hello@houseofhomegrown.com
-
----
-
-Built with ❤️ for sustainable living and traditional craftsmanship.
