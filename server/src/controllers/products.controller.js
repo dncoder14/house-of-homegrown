@@ -99,7 +99,16 @@ export const createProduct = async (req, res) => {
 export const updateProduct = async (req, res) => {
   try {
     const { id } = req.params;
-    const updates = req.body;
+    const updates = { ...req.body };
+    
+    // Parse sizes if it's a string (from FormData)
+    if (updates.sizes && typeof updates.sizes === 'string') {
+      updates.sizes = JSON.parse(updates.sizes);
+    }
+    
+    // Convert price and stock to numbers
+    if (updates.price) updates.price = Number(updates.price);
+    if (updates.stock) updates.stock = Number(updates.stock);
     
     if (req.files && req.files.length > 0) {
       const product = await Product.findById(id);
@@ -125,6 +134,7 @@ export const updateProduct = async (req, res) => {
     
     res.json(product);
   } catch (error) {
+    console.error('Update product error:', error);
     res.status(400).json({ message: error.message });
   }
 };
