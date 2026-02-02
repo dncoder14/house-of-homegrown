@@ -19,7 +19,9 @@ const Admin = () => {
   const { isDark } = useTheme();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showEditProduct, setShowEditProduct] = useState(false);
   const [showAddProduct, setShowAddProduct] = useState(false);
+  const [editingProduct, setEditingProduct] = useState(null);
   const [productData, setProductData] = useState({
     title: '',
     price: '',
@@ -89,7 +91,7 @@ const Admin = () => {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5003/api/admin/products', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/admin/products`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -119,6 +121,22 @@ const Admin = () => {
     } catch (error) {
       toast.error('Network error occurred', { id: loadingToast });
     }
+  };
+
+  const handleEditProduct = (product) => {
+    setEditingProduct(product);
+    setProductData({
+      title: product.title,
+      price: product.price,
+      category: product.category,
+      subcategory: product.subcategory,
+      description: product.description,
+      stock: product.stock || '',
+      gender: product.gender || '',
+      sizes: product.sizes || [{ size: '', stock: '' }],
+      images: []
+    });
+    setShowEditProduct(true);
   };
 
   const handleDeleteProduct = async (productId) => {
@@ -163,7 +181,7 @@ const Admin = () => {
     
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5003/api/admin/products/${productId}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/admin/products/${productId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -176,6 +194,62 @@ const Admin = () => {
       } else {
         const error = await response.json();
         toast.error(error.message || 'Failed to delete product', { id: loadingToast });
+      }
+    } catch (error) {
+      toast.error('Network error occurred', { id: loadingToast });
+    }
+  };
+
+  const handleUpdateProduct = async (e) => {
+    e.preventDefault();
+    const loadingToast = toast.loading('Updating product...');
+    
+    const formData = new FormData();
+    formData.append('title', productData.title);
+    formData.append('price', productData.price);
+    formData.append('category', productData.category);
+    formData.append('subcategory', productData.subcategory);
+    formData.append('description', productData.description);
+    if (productData.category === 'clothing') {
+      formData.append('gender', productData.gender);
+      formData.append('sizes', JSON.stringify(productData.sizes));
+    } else {
+      formData.append('stock', productData.stock);
+    }
+    
+    for (let i = 0; i < productData.images.length; i++) {
+      formData.append('images', productData.images[i]);
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/admin/products/${editingProduct._id}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      });
+
+      if (response.ok) {
+        toast.success('Product updated successfully!', { id: loadingToast });
+        setShowEditProduct(false);
+        setEditingProduct(null);
+        setProductData({
+          title: '',
+          price: '',
+          category: 'clothing',
+          subcategory: '',
+          description: '',
+          stock: '',
+          gender: '',
+          sizes: [{ size: '', stock: '' }],
+          images: []
+        });
+        fetchProducts();
+      } else {
+        const error = await response.json();
+        toast.error(error.message || 'Failed to update product', { id: loadingToast });
       }
     } catch (error) {
       toast.error('Network error occurred', { id: loadingToast });
@@ -240,7 +314,7 @@ const Admin = () => {
                         </div>
                       </div>
                       <div className="flex items-center space-x-2">
-                        <Button variant="outline" size="sm">
+                        <Button variant="outline" size="sm" onClick={() => handleEditProduct(product)}>
                           <Edit className="h-4 w-4" />
                         </Button>
                         <Button 
@@ -260,6 +334,57 @@ const Admin = () => {
           </Card>
         </div>
       </div>
+
+      {/* Edit Product Modal */}
+      {showEditProduct && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className={`${isDark ? 'bg-black border-white/10' : 'bg-white border-earth-beige'} border rounded-lg p-6 w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto`}>
+            <h3 className={`text-lg font-semibold mb-4 ${isDark ? 'text-white' : 'text-earth-brown'}`}>Edit Product</h3>
+            <form onSubmit={handleUpdateProduct} className="space-y-4">
+              <div>
+                <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-white/80' : 'text-earth-brown/80'}`}>Title</label>
+                <Input
+                  value={productData.title}
+                  onChange={(e) => setProductData({...productData, title: e.target.value})}
+                  required
+                />
+              </div>
+              <div>
+                <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-white/80' : 'text-earth-brown/80'}`}>Price (₹)</label>
+                <Input
+                  type="number"
+                  value={productData.price}
+                  onChange={(e) => setProductData({...productData, price: e.target.value})}
+                  required
+                />
+              </div>
+              <div>
+                <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-white/80' : 'text-earth-brown/80'}`}>Description</label>
+                <textarea
+                  value={productData.description}
+                  onChange={(e) => setProductData({...productData, description: e.target.value})}
+                  className={`w-full p-2 border rounded h-20 ${isDark ? 'bg-black border-white/20 text-white placeholder:text-white/50' : 'bg-white border-earth-brown/20 text-earth-brown placeholder:text-earth-brown/50'}`}
+                  required
+                />
+              </div>
+              <div>
+                <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-white/80' : 'text-earth-brown/80'}`}>Images (1-4 images, optional)</label>
+                <input
+                  type="file"
+                  multiple
+                  accept="image/*"
+                  onChange={(e) => setProductData({...productData, images: Array.from(e.target.files)})}
+                  className={`w-full p-2 border rounded ${isDark ? 'bg-black border-white/20 text-white file:bg-white/10 file:text-white file:border-0 file:rounded file:px-2 file:py-1 file:mr-2' : 'bg-white border-earth-brown/20 text-earth-brown file:bg-earth-cream file:text-earth-brown file:border-0 file:rounded file:px-2 file:py-1 file:mr-2'}`}
+                />
+              </div>
+              <div className="flex space-x-2">
+                <Button type="submit" className="flex-1">Update Product</Button>
+                <Button type="button" variant="outline" onClick={() => setShowEditProduct(false)}>Cancel</Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Add Product Modal */}
       {showAddProduct && (
