@@ -11,7 +11,7 @@ const app = express();
 
 const corsOptions = {
   origin: process.env.NODE_ENV === 'production' 
-    ? ['https://your-vercel-domain.vercel.app'] 
+    ? ['https://house-of-homegrown-gray.vercel.app'] 
     : ['http://localhost:5173'],
   credentials: true
 };
