@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { User, MapPin, Package, Edit, Plus, RotateCcw, X } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
@@ -11,6 +12,7 @@ import { ordersAPI, profileAPI } from '../utils/api';
 const Profile = () => {
   const { user, setUser } = useAuth();
   const { isDark } = useTheme();
+  const navigate = useNavigate();
   const [orders, setOrders] = useState([]);
   const [addresses, setAddresses] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -290,7 +292,7 @@ const Profile = () => {
                       <Package className="h-5 w-5 mr-2" />
                       Recent Orders
                     </CardTitle>
-                    <Button variant="outline" size="sm">
+                    <Button variant="outline" size="sm" onClick={() => navigate('/orders')}>
                       View All Orders
                     </Button>
                   </div>
@@ -312,7 +314,8 @@ const Profile = () => {
                         return (
                           <div
                             key={order._id}
-                            className={`p-4 rounded-lg border ${isDark ? 'border-white/10 bg-white/5' : 'border-earth-beige bg-earth-cream/20'}`}
+                            onClick={() => navigate(`/orders/${order._id}`)}
+                            className={`p-4 rounded-lg border cursor-pointer hover:shadow-md transition-shadow ${isDark ? 'border-white/10 bg-white/5 hover:bg-white/10' : 'border-earth-beige bg-earth-cream/20 hover:bg-earth-cream/30'}`}
                           >
                             <div className="flex items-center justify-between mb-2">
                               <span className={`font-semibold ${isDark ? 'text-white' : 'text-earth-brown'}`}>
@@ -330,7 +333,10 @@ const Profile = () => {
                                   <Button 
                                     size="sm" 
                                     variant="outline"
-                                    onClick={() => handleReturn(order._id)}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleReturn(order._id);
+                                    }}
                                     className="text-xs"
                                   >
                                     <RotateCcw className="h-3 w-3 mr-1" />
