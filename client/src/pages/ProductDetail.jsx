@@ -80,7 +80,7 @@ const ProductDetail = () => {
   }
 
   return (
-    <div className={`min-h-screen ${isDark ? 'bg-black' : 'bg-earth-cream/30'}`}>
+    <div className={`min-h-screen ${isDark ? 'bg-background' : 'bg-earth-cream/30'}`}>
       <div className="container mx-auto px-4 py-8">
         <Button
           variant="ghost"
@@ -93,7 +93,7 @@ const ProductDetail = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
           <div className="space-y-4">
-            <div className={`aspect-square overflow-hidden rounded-lg ${isDark ? 'bg-black/50' : 'bg-white'}`}>
+            <div className={`aspect-square overflow-hidden rounded-lg ${isDark ? 'bg-card' : 'bg-white'}`}>
               <img
                 src={product.imageUrl}
                 alt={product.title}
@@ -109,7 +109,7 @@ const ProductDetail = () => {
                 {product.rating && (
                   <div className="flex items-center space-x-1">
                     <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                    <span className="text-sm text-white/70">{product.rating}</span>
+                    <span className={`text-sm ${isDark ? 'text-white/70' : 'text-earth-brown/70'}`}>{product.rating}</span>
                   </div>
                 )}
               </div>
@@ -125,37 +125,37 @@ const ProductDetail = () => {
               <p className={`${isDark ? 'text-white/80' : 'text-earth-brown/80'} leading-relaxed`}>{product.description}</p>
             </div>
 
-            <Card className="bg-black/50 border-white/10">
+            <Card className={`${isDark ? 'bg-card border-border' : 'bg-white border-earth-beige'}`}>
               <CardContent className="p-6">
                 <div className="space-y-4">
                   <div>
-                    <label className="text-sm font-medium text-white mb-2 block">Quantity</label>
+                    <label className={`text-sm font-medium ${isDark ? 'text-white' : 'text-earth-brown'} mb-2 block`}>Quantity</label>
                     <div className="flex items-center space-x-3">
                       <Button
                         variant="outline"
                         size="icon"
                         onClick={decrementQuantity}
                         disabled={quantity <= 1}
-                        className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+                        className={`${isDark ? 'bg-white/10 border-white/20 text-white hover:bg-white/20' : 'bg-earth-cream border-earth-brown/20 text-earth-brown hover:bg-earth-beige'}`}
                       >
                         <Minus className="h-4 w-4" />
                       </Button>
-                      <span className="text-lg font-medium w-12 text-center text-white">{quantity}</span>
+                      <span className={`text-lg font-medium w-12 text-center ${isDark ? 'text-white' : 'text-earth-brown'}`}>{quantity}</span>
                       <Button
                         variant="outline"
                         size="icon"
                         onClick={incrementQuantity}
                         disabled={product.stock && quantity >= product.stock}
-                        className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+                        className={`${isDark ? 'bg-white/10 border-white/20 text-white hover:bg-white/20' : 'bg-earth-cream border-earth-brown/20 text-earth-brown hover:bg-earth-beige'}`}
                       >
                         <Plus className="h-4 w-4" />
                       </Button>
                     </div>
                   </div>
 
-                  <div className="pt-4 border-t border-white/10">
+                  <div className={`pt-4 border-t ${isDark ? 'border-white/10' : 'border-earth-beige'}`}>
                     <div className="flex items-center justify-between mb-4">
-                      <span className="text-lg font-medium text-white">Total:</span>
+                      <span className={`text-lg font-medium ${isDark ? 'text-white' : 'text-earth-brown'}`}>Total:</span>
                       <span className="text-2xl font-bold text-earth-terracotta">
                         ₹{(product.price * quantity).toLocaleString()}
                       </span>
@@ -175,24 +175,24 @@ const ProductDetail = () => {
               </CardContent>
             </Card>
 
-            <Card className="bg-black/50 border-white/10">
+            <Card className={`${isDark ? 'bg-card border-border' : 'bg-white border-earth-beige'}`}>
               <CardContent className="p-6">
-                <h3 className="text-lg font-semibold text-white mb-4">Product Details</h3>
+                <h3 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-earth-brown'} mb-4`}>Product Details</h3>
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-white/70">Category:</span>
-                    <span className="capitalize text-white">{product.category}</span>
+                    <span className={`${isDark ? 'text-white/70' : 'text-earth-brown/70'}`}>Category:</span>
+                    <span className={`capitalize ${isDark ? 'text-white' : 'text-earth-brown'}`}>{product.category}</span>
                   </div>
                   {product.rating && (
                     <div className="flex justify-between">
-                      <span className="text-white/70">Rating:</span>
-                      <span className="text-white">{product.rating}/5</span>
+                      <span className={`${isDark ? 'text-white/70' : 'text-earth-brown/70'}`}>Rating:</span>
+                      <span className={`${isDark ? 'text-white' : 'text-earth-brown'}`}>{product.rating}/5</span>
                     </div>
                   )}
                   {product.stock && (
                     <div className="flex justify-between">
-                      <span className="text-white/70">Stock:</span>
-                      <span className="text-white">{product.stock} units</span>
+                      <span className={`${isDark ? 'text-white/70' : 'text-earth-brown/70'}`}>Stock:</span>
+                      <span className={`${isDark ? 'text-white' : 'text-earth-brown'}`}>{product.stock} units</span>
                     </div>
                   )}
                 </div>
