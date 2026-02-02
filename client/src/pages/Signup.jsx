@@ -88,7 +88,7 @@ const Signup = () => {
           className="absolute bottom-1/4 left-12 w-16 h-16 opacity-60 animate-pulse"
         />
       </div>
-      <Card className={`w-full max-w-md ${isDark ? 'bg-black/50 border-white/10' : 'bg-white border-earth-beige'}`}>
+      <Card className={`w-full max-w-md relative z-10 ${isDark ? 'bg-black/50 border-white/10' : 'bg-white border-earth-beige'}`}>
         <CardHeader className="text-center">
           <CardTitle className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-earth-brown'}`}>Create Account</CardTitle>
           <p className={`${isDark ? 'text-white/70' : 'text-earth-brown/70'}`}>Join our sustainable community</p>
