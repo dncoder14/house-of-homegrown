@@ -5,7 +5,7 @@ import { AlertCircle } from 'lucide-react';
 const AuthLayout = ({ title, subtitle, error, footer, children }) => (
   <div className="grid min-h-[calc(100vh-7.5rem)] lg:grid-cols-2">
     <div className="relative hidden overflow-hidden bg-[hsl(22_30%_10%)] lg:block">
-      <img src="/hero.webp" alt="" className="absolute inset-0 h-full w-full object-cover opacity-70" />
+      <img src="/hero-dark-1600.webp" alt="" className="absolute inset-0 h-full w-full object-cover object-[75%_center] opacity-80" />
       <div className="absolute inset-0 bg-gradient-to-t from-[hsl(22_36%_8%)] via-[hsl(22_36%_8%/0.4)] to-transparent" />
       <div className="relative flex h-full flex-col justify-end p-12 text-[hsl(36_30%_96%)]">
         <p className="max-w-md font-display text-4xl leading-tight">Made by hand. Carried across India to your door.</p>

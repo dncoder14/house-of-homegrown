@@ -38,7 +38,7 @@ const SectionHeading = ({ title, description, action }) => (
 const Home = () => {
   const [featuredProducts, setFeaturedProducts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const { isDark } = useTheme();
+  const { theme } = useTheme();
   usePageTitle();
 
   useEffect(() => {
@@ -50,32 +50,37 @@ const Home = () => {
 
   return (
     <div>
-      {/* Hero: the photograph carries the brand; copy sits on a scrim anchored to the left */}
-      <section className="relative isolate overflow-hidden bg-[hsl(22_30%_10%)]">
+      {/* Hero: on large screens the copy sits on the photograph's empty left side; on small screens
+          the photo is a banner and the copy sits below it, so nothing covers the picture. */}
+      <section className="relative isolate overflow-hidden bg-background lg:aspect-[2/1] lg:max-h-[54rem] lg:min-h-[34rem]">
         <img
-          src={isDark ? '/hero.webp' : '/hero_light.webp'}
-          alt=""
+          src={`/hero-${theme}-1600.webp`}
+          srcSet={`/hero-${theme}-1600.webp 1600w, /hero-${theme}-3200.webp 3200w`}
+          sizes="100vw"
+          width="3548"
+          height="1774"
+          alt="A shop assistant standing beside mannequins dressed in a saree, an anarkali and a kurta, with shelves of folded handloom textiles and copper pots behind"
           fetchpriority="high"
-          className="absolute inset-0 -z-20 h-full w-full origin-right object-cover object-right lg:scale-[1.12]"
+          className="h-[22rem] w-full object-cover object-[78%_center] sm:h-[30rem] lg:absolute lg:inset-0 lg:h-full"
         />
-        <div className="absolute inset-0 -z-10 bg-gradient-to-r from-[hsl(22_36%_8%/0.88)] via-[hsl(22_36%_8%/0.55)] to-transparent md:via-[hsl(22_36%_8%/0.35)]" />
-        <div className="absolute inset-x-0 bottom-0 -z-10 h-24 bg-gradient-to-t from-background/20 to-transparent" />
 
-        <div className="page-container flex min-h-[34rem] items-center py-16 md:min-h-[40rem] lg:min-h-[44rem]">
-          <div className="max-w-xl animate-fade-up text-[hsl(36_30%_96%)]">
-            <h1 className="text-[2.5rem] leading-[1.05] sm:text-5xl lg:text-[3.5rem]">
-              Celebrating India's heritage and craft
-            </h1>
-            <p className="mt-5 max-w-md text-lg leading-relaxed text-[hsl(36_24%_90%)]">
-              Premium, sustainable products made by local artisans. Every purchase supports traditional craftsmanship.
-            </p>
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <Button asChild size="lg" className="bg-[hsl(17_58%_58%)] text-[hsl(22_40%_8%)] hover:bg-[hsl(17_62%_66%)]">
-                <Link to="/shop">Shop now <ArrowRight className="h-4 w-4" /></Link>
-              </Button>
-              <Button asChild size="lg" variant="outline" className="border-white/40 bg-white/10 text-white backdrop-blur hover:bg-white/20 hover:text-white">
-                <Link to="/categories">Browse categories</Link>
-              </Button>
+        <div className="lg:absolute lg:inset-0 lg:flex lg:items-center">
+          <div className="page-container py-10 sm:py-12 lg:py-0">
+            <div className="max-w-md animate-fade-up lg:max-w-[30rem] xl:max-w-lg">
+              <h1 className="text-4xl leading-[1.05] sm:text-5xl xl:text-[3.5rem]">
+                Celebrating India's heritage and craft
+              </h1>
+              <p className="mt-5 max-w-md text-lg leading-relaxed text-muted-foreground">
+                Premium, sustainable products made by local artisans. Every purchase supports traditional craftsmanship.
+              </p>
+              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+                <Button asChild size="lg">
+                  <Link to="/shop">Shop now <ArrowRight className="h-4 w-4" /></Link>
+                </Button>
+                <Button asChild size="lg" variant="outline">
+                  <Link to="/categories">Browse categories</Link>
+                </Button>
+              </div>
             </div>
           </div>
         </div>
