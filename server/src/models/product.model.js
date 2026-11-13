@@ -14,11 +14,13 @@ const productSchema = new mongoose.Schema({
   category: {
     type: String,
     required: true,
-    enum: ['clothing', 'home', 'wellness', 'beauty', 'accessories']
+    enum: ['clothing', 'home', 'accessories']
   },
   subcategory: {
     type: String,
-    required: true
+    required: true,
+    trim: true,
+    lowercase: true
   },
   gender: {
     type: String,
@@ -68,6 +70,10 @@ const productSchema = new mongoose.Schema({
 }, {
   timestamps: true
 });
+
+productSchema.index({ category: 1, subcategory: 1, createdAt: -1 });
+productSchema.index({ price: 1 });
+productSchema.index({ createdAt: -1 });
 
 productSchema.virtual('imageUrl').get(function() {
   return this.images.length > 0 ? this.images[0].url : '';

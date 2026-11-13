@@ -222,6 +222,13 @@ const products = [
 
 const seedProducts = async () => {
   try {
+    if (process.env.NODE_ENV === 'production' && process.env.ALLOW_SEED !== 'true') {
+      throw new Error('Refusing to seed in production. Set ALLOW_SEED=true to override.');
+    }
+    if (process.env.CONFIRM_WIPE !== 'true') {
+      throw new Error('This deletes ALL existing products. Re-run with CONFIRM_WIPE=true to continue.');
+    }
+
     await mongoose.connect(process.env.MONGODB_URI);
     console.log('Connected to MongoDB');
 
@@ -231,7 +238,7 @@ const seedProducts = async () => {
     const productsWithImages = products.map((product, index) => ({
       ...product,
       images: [{
-        url: `https://via.placeholder.com/400x400?text=${encodeURIComponent(product.title)}`,
+        url: `https://placehold.co/400x400?text=${encodeURIComponent(product.title)}`,
         publicId: `placeholder_${index}`
       }]
     }));
