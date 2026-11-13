@@ -18,7 +18,8 @@
    ```
    NODE_ENV=production
    MONGODB_URI=your-mongodb-connection-string
-   JWT_SECRET=your-jwt-secret-key
+   JWT_SECRET=a-random-string-of-32-or-more-characters
+   FRONTEND_URL=https://your-app.vercel.app
    CLOUDINARY_CLOUD_NAME=your-cloudinary-cloud-name
    CLOUDINARY_API_KEY=your-cloudinary-api-key
    CLOUDINARY_API_SECRET=your-cloudinary-api-secret
@@ -54,10 +55,18 @@
 
 ## Post-Deployment Steps
 
-1. **Update CORS Origins**
-   Update your backend to allow your Vercel domain in CORS settings
+1. **Check CORS**
+   `FRONTEND_URL` must be set to your Vercel URL (no trailing slash). Use a comma-separated list for several origins. The server refuses to start in production without it.
 
-2. **Test the Application**
+2. **Create your first admin**
+   Sign up through the site, then from the `server` folder run:
+   ```
+   npm run make-admin -- you@example.com
+   ```
+   (with `MONGODB_URI` set). Only admins can reach `/admin` and manage products and orders.
+
+3. **Test the Application**
+   - Verify `GET /api/health` returns `{"status":"ok"}`
    - Verify API endpoints work
    - Test authentication flow
    - Check image uploads (Cloudinary)

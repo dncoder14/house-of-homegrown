@@ -9,19 +9,21 @@ A full-stack D2C ecommerce website for sustainable, premium Indian products buil
 - **shadcn/ui + Tailwind CSS** for premium design
 - **Responsive design** with mobile-first approach
 - **Earthy color palette** (cream, beige, sage, terracotta)
-- **Product catalog** with search, filters, and sorting
-- **Shopping cart** with localStorage persistence
-- **User authentication** with JWT
-- **Order management** and history
+- **Product catalog** with server-side search, filters, sorting and pagination
+- **Size selection** for clothing, with per-size stock
+- **Shopping cart** with localStorage persistence, re-validated against live prices and stock
+- **User authentication** with JWT (expired sessions are detected and logged out)
+- **Order management**: history, tracking, and customer cancellation
+- **Admin dashboard** (`/admin`, admins only): products, inventory and order status
 - **Static pages** (About, Contact, FAQ, Privacy, Terms, Shipping)
 
 ### Backend
 - **Node.js + Express** with strict MVC architecture
-- **MongoDB** for user and order data
-- **JWT authentication** with bcrypt password hashing
-- **Products from JSON file** (no admin panel)
-- **RESTful API** with proper error handling
-- **CORS enabled** for frontend communication
+- **MongoDB** for users, products, orders (product images on Cloudinary)
+- **JWT authentication** with bcrypt hashing, `user`/`admin` roles, and login rate limiting
+- **Server-authoritative orders**: prices come from the database, stock is reserved atomically, and cancelling returns stock
+- **Hardening**: helmet, Mongo operator sanitising, input validation, request size and rate limits
+- **RESTful API** with consistent JSON errors and a `/api/health` endpoint
 
 ### Pages
 - Home (hero, categories, featured products)
@@ -60,9 +62,10 @@ ecommerce/
 │   │   ├── models/        # Mongoose models
 │   │   ├── routes/        # API routes
 │   │   ├── middleware/    # Custom middleware
-│   │   ├── services/      # Business logic
-│   │   ├── utils/         # Utility functions
-│   │   └── data/          # Products JSON file
+│   │   ├── services/      # Business logic (order pricing, stock)
+│   │   ├── utils/         # Validation helpers, errors, jwt
+│   │   ├── scripts/       # seed + make-admin scripts
+│   │   └── tests/         # unit + integration tests
 │   └── package.json
 └── README.md
 ```
@@ -94,12 +97,9 @@ cd server
 cp .env.example .env
 ```
 
-Edit `server/.env`:
-```
-PORT=5000
-MONGODB_URI=mongodb://localhost:27017/house-of-homegrown
-JWT_SECRET=your-super-secret-jwt-key-here
-```
+Edit `server/.env` (see `server/.env.example`). `MONGODB_URI`, `JWT_SECRET` and the three
+`CLOUDINARY_*` values are required; the server will not start without them. In production
+`FRONTEND_URL` is required too.
 
 **Client (.env)**
 ```bash
@@ -138,32 +138,57 @@ npm run dev
 # Client runs on http://localhost:5173
 ```
 
+### 5. Create an admin
+
+Sign up on the site, then promote that account:
+```bash
+cd server
+npm run make-admin -- you@example.com
+```
+
+### 6. Run the tests
+```bash
+cd server
+npm test                  # unit tests
+npm run test:integration  # end-to-end API tests (downloads an in-memory MongoDB on first run)
+```
+
 ## API Endpoints
 
 ### Authentication
-- `POST /api/auth/signup` - User registration
+- `POST /api/auth/signup` - User registration (password min 8 characters)
 - `POST /api/auth/login` - User login
+- `GET /api/auth/me` - Current user (validates the token)
 
-### Products
-- `GET /api/products` - Get all products (with filters)
-- `GET /api/products/:id` - Get single product
-- `GET /api/products/categories` - Get all categories
+### Products (public)
+- `GET /api/products` - List products. Query: `search`, `category`, `subcategory`, `minPrice`, `maxPrice`, `sort` (`price_low`, `price_high`, `newest`), `ids`, `page`, `limit` (max 100). Total count is in the `X-Total-Count` header.
+- `GET /api/products/:id` - Single product
+- `GET /api/products/categories` - Category list
+- `GET /api/subcategories` - Subcategories
 
-### Orders (Protected)
-- `POST /api/orders` - Create new order
-- `GET /api/orders` - Get user orders
-- `GET /api/orders/:id` - Get single order
+### Profile (protected)
+- `GET/PUT /api/profile`
+- `GET/POST /api/profile/addresses`, `PUT/DELETE /api/profile/addresses/:id`
+
+### Orders (protected)
+- `POST /api/orders` - Place an order. Send `items: [{ productId, size?, quantity }]`, `shippingAddress`, and the expected `totalAmount`. Prices and stock are checked server-side (`409` if prices changed or stock ran out).
+- `GET /api/orders`, `GET /api/orders/:id`
+- `PATCH /api/orders/:id/cancel` - Cancel while `Placed` or `Processing`
+
+### Admin (admin role required)
+- `POST /api/admin/products`, `PUT /api/admin/products/:id`, `DELETE /api/admin/products/:id`
+- `GET /api/admin/orders`, `PATCH /api/admin/orders/:id/status`
+- `POST/PUT/DELETE /api/subcategories`
+
+### Other
+- `GET /api/health`
 
 ## Product Data
 
-Products are stored in `server/src/data/products.json` and include:
-- Organic cotton clothing
-- Bamboo home products
-- Copper wellness items
-- Natural beauty products
-- Eco-friendly accessories
+Products live in MongoDB and are managed from `/admin`. For local development,
+`CONFIRM_WIPE=true npm run seed:products` loads sample data (this **deletes all existing products** and refuses to run in production).
 
-Each product has: id, title, price, category, imageUrl, description, rating, stock
+Clothing products carry `sizes: [{ size, stock }]`; all other products carry a single `stock`.
 
 ## Key Features
 
@@ -173,16 +198,14 @@ Each product has: id, title, price, category, imageUrl, description, rating, sto
 - Persistent login state
 
 ### Shopping Cart
-- localStorage persistence
-- Only works for logged-in users
-- Quantity management
-- Real-time total calculation
+- localStorage persistence, one line per product and size
+- Quantities capped at available stock
+- Refreshed from the server on the cart and checkout pages
 
 ### Order Management
-- COD (Cash on Delivery) only
-- Order history with details
-- Status tracking (static)
-- Shipping address storage
+- COD (Cash on Delivery) only. There is no online payment gateway yet.
+- Statuses: Placed, Processing, Shipped, Delivered, Cancelled (admins move orders forward)
+- Customers can cancel before an order ships; stock is restored
 
 ### Responsive Design
 - Mobile-first approach
@@ -208,7 +231,6 @@ Each product has: id, title, price, category, imageUrl, description, rating, sto
 ## Development
 
 ### Code Standards
-- No comments in code
 - Clean, readable implementations
 - Proper error handling
 - MVC architecture separation
