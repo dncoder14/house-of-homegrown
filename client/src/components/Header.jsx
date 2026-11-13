@@ -44,7 +44,7 @@ const NAV_GROUPS = [
 
 const titleCase = (value) => value.charAt(0).toUpperCase() + value.slice(1);
 
-const navLinkClass = 'flex h-10 items-center gap-1 whitespace-nowrap rounded-lg px-3 text-sm font-medium text-foreground/80 transition-colors hover:bg-muted hover:text-foreground';
+const navLinkClass = 'flex h-10 items-center gap-1 whitespace-nowrap rounded-lg px-2.5 xl:px-3 text-sm font-medium text-foreground/80 transition-colors hover:bg-muted hover:text-foreground';
 
 const SearchBox = ({ value, onChange, onSubmit, className, inputId }) => (
   <form onSubmit={onSubmit} role="search" className={className}>
@@ -124,7 +124,7 @@ const Header = () => {
           scrolled ? 'border-border shadow-soft' : 'border-transparent'
         }`}
       >
-        <div className="page-container flex h-[4.25rem] items-center gap-3 lg:gap-6">
+        <div className="page-container flex h-[4.25rem] items-center gap-3 lg:gap-4">
           <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon" className="-ml-2 lg:hidden" aria-label="Open menu">
@@ -204,7 +204,7 @@ const Header = () => {
 
           <Link to="/" className="flex shrink-0 items-center gap-2.5" aria-label="House of Homegrown home">
             <img src="/logo.png" alt="" className="h-9 w-9 rounded-md" />
-            <span className="hidden font-display text-[1.375rem] leading-none tracking-tight sm:inline">House of Homegrown</span>
+            <span className="hidden font-display text-[1.25rem] leading-none tracking-tight sm:inline lg:hidden xl:inline">House of Homegrown</span>
           </Link>
 
           <nav aria-label="Primary" className="hidden items-center lg:flex">
@@ -258,7 +258,7 @@ const Header = () => {
             onChange={setSearchQuery}
             onSubmit={handleSearch}
             inputId="search-desktop"
-            className="ml-auto hidden w-full max-w-xs md:block lg:max-w-[13rem] xl:max-w-xs"
+            className="ml-auto hidden w-full max-w-xs shrink-0 md:block lg:w-44 xl:w-52"
           />
 
           <div className="ml-auto flex items-center gap-1 md:ml-0">

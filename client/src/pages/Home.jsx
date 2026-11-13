@@ -52,7 +52,7 @@ const Home = () => {
     <div>
       {/* Hero: on large screens the copy sits on the photograph's empty left side; on small screens
           the photo is a banner and the copy sits below it, so nothing covers the picture. */}
-      <section className="relative isolate overflow-hidden bg-background lg:aspect-[2/1] lg:max-h-[54rem] lg:min-h-[34rem]">
+      <section className="relative isolate overflow-hidden bg-background lg:h-[clamp(34rem,50vw,60rem)]">
         <img
           src={`/hero-${theme}-1600.webp`}
           srcSet={`/hero-${theme}-1600.webp 1600w, /hero-${theme}-3200.webp 3200w`}
