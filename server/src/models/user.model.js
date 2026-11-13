@@ -48,7 +48,8 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true,
     unique: true,
-    lowercase: true
+    lowercase: true,
+    trim: true
   },
   password: {
     type: String,
@@ -56,6 +57,11 @@ const userSchema = new mongoose.Schema({
     minlength: 6
   },
   phone: String,
+  role: {
+    type: String,
+    enum: ['user', 'admin'],
+    default: 'user'
+  },
   addresses: [addressSchema]
 }, {
   timestamps: true

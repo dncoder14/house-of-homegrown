@@ -28,4 +28,20 @@ export const deleteImage = async (publicId) => {
   return cloudinary.uploader.destroy(publicId);
 };
 
+
+export const uploadImages = async (files) => {
+  const settled = await Promise.allSettled(files.map((file) => uploadImage(file.buffer)));
+  const uploaded = settled.filter((r) => r.status === 'fulfilled').map((r) => r.value);
+  const failed = settled.find((r) => r.status === 'rejected');
+  if (failed) {
+    await deleteImages(uploaded.map((u) => u.public_id));
+    throw failed.reason;
+  }
+  return uploaded.map((u) => ({ url: u.secure_url, publicId: u.public_id }));
+};
+
+export const deleteImages = async (publicIds) => {
+  await Promise.allSettled(publicIds.filter(Boolean).map((id) => deleteImage(id)));
+};
+
 export default cloudinary;

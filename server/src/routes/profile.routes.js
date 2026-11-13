@@ -1,14 +1,17 @@
 import express from 'express';
 import { getProfile, updateProfile, addAddress, updateAddress, deleteAddress, getAddresses } from '../controllers/profile.controller.js';
-import { authenticateToken } from '../middleware/auth.middleware.js';
+import { authenticate } from '../middleware/auth.middleware.js';
+import { asyncHandler } from '../utils/errors.js';
 
 const router = express.Router();
 
-router.get('/', authenticateToken, getProfile);
-router.put('/', authenticateToken, updateProfile);
-router.get('/addresses', authenticateToken, getAddresses);
-router.post('/addresses', authenticateToken, addAddress);
-router.put('/addresses/:addressId', authenticateToken, updateAddress);
-router.delete('/addresses/:addressId', authenticateToken, deleteAddress);
+router.use(authenticate);
+
+router.get('/', asyncHandler(getProfile));
+router.put('/', asyncHandler(updateProfile));
+router.get('/addresses', asyncHandler(getAddresses));
+router.post('/addresses', asyncHandler(addAddress));
+router.put('/addresses/:addressId', asyncHandler(updateAddress));
+router.delete('/addresses/:addressId', asyncHandler(deleteAddress));
 
 export default router;
