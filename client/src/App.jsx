@@ -27,6 +27,7 @@ import FAQ from './pages/FAQ';
 import Privacy from './pages/Privacy';
 import Terms from './pages/Terms';
 import Shipping from './pages/Shipping';
+import NotFound from './pages/NotFound';
 
 function App() {
   return (
@@ -79,10 +80,11 @@ function App() {
                   </ProtectedRoute>
                 } />
                 <Route path="/admin" element={
-                  <ProtectedRoute>
+                  <ProtectedRoute adminOnly>
                     <Admin />
                   </ProtectedRoute>
                 } />
+                <Route path="*" element={<NotFound />} />
               </Routes>
             </main>
             <Footer />

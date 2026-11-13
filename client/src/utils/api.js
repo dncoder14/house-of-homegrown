@@ -14,14 +14,31 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    const url = error.config?.url || '';
+    const isAuthAttempt = url.includes('/auth/login') || url.includes('/auth/signup');
+    if (error.response?.status === 401 && !isAuthAttempt && localStorage.getItem('token')) {
+      window.dispatchEvent(new Event('auth:expired'));
+    }
+    return Promise.reject(error);
+  }
+);
+
+export const getErrorMessage = (error, fallback = 'Something went wrong') =>
+  error?.response?.data?.message || (error?.request ? 'Network error. Please check your connection.' : fallback);
+
 export const authAPI = {
   signup: (data) => api.post('/auth/signup', data),
   login: (data) => api.post('/auth/login', data),
+  me: () => api.get('/auth/me'),
 };
 
 export const productsAPI = {
   getAll: (params) => api.get('/products', { params }),
   getById: (id) => api.get(`/products/${id}`),
+  getByIds: (ids) => api.get('/products', { params: { ids: ids.join(',') } }),
   getCategories: () => api.get('/products/categories'),
 };
 
@@ -29,6 +46,15 @@ export const ordersAPI = {
   create: (data) => api.post('/orders', data),
   getAll: () => api.get('/orders'),
   getById: (id) => api.get(`/orders/${id}`),
+  cancel: (id) => api.patch(`/orders/${id}/cancel`),
+};
+
+export const adminAPI = {
+  createProduct: (formData) => api.post('/admin/products', formData),
+  updateProduct: (id, formData) => api.put(`/admin/products/${id}`, formData),
+  deleteProduct: (id) => api.delete(`/admin/products/${id}`),
+  getOrders: (params) => api.get('/admin/orders', { params }),
+  updateOrderStatus: (id, status) => api.patch(`/admin/orders/${id}/status`, { status }),
 };
 
 export const profileAPI = {

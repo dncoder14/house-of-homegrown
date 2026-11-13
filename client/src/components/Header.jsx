@@ -15,7 +15,7 @@ const Header = () => {
   const [categories, setCategories] = useState([]);
   const [showCategories, setShowCategories] = useState(false);
   const navigate = useNavigate();
-  const { user, logout, isAuthenticated } = useAuth();
+  const { user, logout, isAuthenticated, isAdmin } = useAuth();
   const { getTotalItems } = useCart();
   const { isDark, toggleTheme } = useTheme();
 
@@ -182,6 +182,14 @@ const Header = () => {
                     >
                       Orders
                     </Link>
+                    {isAdmin && (
+                      <Link
+                        to="/admin"
+                        className={`block px-4 py-2 ${isDark ? 'text-white/80 hover:text-white hover:bg-white/10' : 'text-earth-brown hover:text-earth-terracotta hover:bg-earth-cream'} transition-colors`}
+                      >
+                        Admin
+                      </Link>
+                    )}
                     <button
                       onClick={logout}
                       className={`block w-full text-left px-4 py-2 ${isDark ? 'text-white/80 hover:text-white hover:bg-white/10' : 'text-earth-brown hover:text-earth-terracotta hover:bg-earth-cream'} transition-colors`}
@@ -272,6 +280,15 @@ const Header = () => {
                       >
                         Orders
                       </Link>
+                      {isAdmin && (
+                        <Link
+                          to="/admin"
+                          className="text-earth-brown hover:text-earth-terracotta transition-colors py-2"
+                          onClick={() => setMobileMenuOpen(false)}
+                        >
+                          Admin
+                        </Link>
+                      )}
                       <Button
                         variant="ghost"
                         className="justify-start p-0 h-auto text-earth-brown hover:text-earth-terracotta"
