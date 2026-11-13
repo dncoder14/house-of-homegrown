@@ -7,11 +7,13 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import usePageTitle from '../hooks/usePageTitle';
 import { ordersAPI, profileAPI } from '../utils/api';
 
 const Profile = () => {
   const { user, setUser } = useAuth();
   const { isDark } = useTheme();
+  usePageTitle('My Profile');
   const navigate = useNavigate();
   const [orders, setOrders] = useState([]);
   const [addresses, setAddresses] = useState([]);
@@ -148,7 +150,8 @@ const Profile = () => {
     }
   };
 
-  const isReturnEligible = (orderDate) => {
+  const isReturnEligible = (orderDate, status) => {
+    if (status !== 'Delivered') return false;
     const returnPolicyDays = 14;
     const orderDateTime = new Date(orderDate);
     const currentTime = new Date();
@@ -158,7 +161,7 @@ const Profile = () => {
   };
 
   const handleReturn = (orderId) => {
-    toast.success(`Return request initiated for order ${orderId.slice(-8)}. You will be contacted within 24 hours.`);
+    toast(`To start a return, email hello@houseofhomegrown.com with order ID ${orderId.slice(-8)}.`, { duration: 8000 });
   };
 
   return (
@@ -310,7 +313,7 @@ const Profile = () => {
                   ) : orders.length > 0 ? (
                     <div className="space-y-4">
                       {orders.map((order) => {
-                        const returnEligible = isReturnEligible(order.createdAt);
+                        const returnEligible = isReturnEligible(order.createdAt, order.status);
                         return (
                           <div
                             key={order._id}

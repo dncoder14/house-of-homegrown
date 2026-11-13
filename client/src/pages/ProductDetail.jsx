@@ -4,11 +4,12 @@ import { Star, ShoppingCart, ArrowLeft, Plus, Minus } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
-import { useCart } from '../context/CartContext';
+import { useCart, getVariantStock, MAX_LINE_QUANTITY } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { productsAPI } from '../utils/api';
 import toast from 'react-hot-toast';
+import usePageTitle from '../hooks/usePageTitle';
 
 const ProductDetail = () => {
   const { id } = useParams();
@@ -17,9 +18,13 @@ const ProductDetail = () => {
   const [quantity, setQuantity] = useState(1);
   const [loading, setLoading] = useState(true);
   const [isAdding, setIsAdding] = useState(false);
+  const [selectedSize, setSelectedSize] = useState('');
+  const [activeImage, setActiveImage] = useState(0);
   const { addToCart } = useCart();
   const { isAuthenticated } = useAuth();
   const { isDark } = useTheme();
+
+  usePageTitle(product?.title);
 
   useEffect(() => {
     fetchProduct();
@@ -30,6 +35,10 @@ const ProductDetail = () => {
       setLoading(true);
       const response = await productsAPI.getById(id);
       setProduct(response.data);
+      setActiveImage(0);
+      setQuantity(1);
+      const sizes = response.data.sizes || [];
+      setSelectedSize(response.data.category === 'clothing' && sizes.length === 1 ? sizes[0].size : '');
     } catch (error) {
       console.error('Error fetching product:', error);
       navigate('/shop');
@@ -38,26 +47,42 @@ const ProductDetail = () => {
     }
   };
 
+  const isClothing = product?.category === 'clothing';
+  const available = product ? Math.min(getVariantStock(product, selectedSize), MAX_LINE_QUANTITY) : 0;
+  const outOfStock = product ? (isClothing ? product.totalStock === 0 : (product.stock ?? 0) === 0) : false;
+
+  const selectSize = (size) => {
+    setSelectedSize(size);
+    setQuantity(1);
+  };
+
   const handleAddToCart = () => {
-    if (product) {
-      setIsAdding(true);
-      addToCart(product, quantity);
-      toast.success(`${quantity} ${product.title} added to cart!`);
-      setQuantity(1);
-      setTimeout(() => setIsAdding(false), 600);
+    if (!product) return;
+    if (isClothing && !selectedSize) {
+      toast.error('Please select a size');
+      return;
     }
+    const result = addToCart(product, quantity, selectedSize);
+    if (!result.ok) {
+      toast.error(result.reason === 'out_of_stock'
+        ? 'This item is out of stock'
+        : `You already have the maximum available (${result.available}) in your cart`);
+      return;
+    }
+    toast.success(result.capped
+      ? `Added to cart (only ${result.available} available)`
+      : `${quantity} × ${product.title}${selectedSize ? ` (${selectedSize})` : ''} added to cart!`);
+    setQuantity(1);
+    setIsAdding(true);
+    setTimeout(() => setIsAdding(false), 600);
   };
 
   const incrementQuantity = () => {
-    if (product && (!product.stock || quantity < product.stock)) {
-      setQuantity(prev => prev + 1);
-    }
+    if (quantity < available) setQuantity((prev) => prev + 1);
   };
 
   const decrementQuantity = () => {
-    if (quantity > 1) {
-      setQuantity(prev => prev - 1);
-    }
+    if (quantity > 1) setQuantity((prev) => prev - 1);
   };
 
   if (loading) {
@@ -95,18 +120,33 @@ const ProductDetail = () => {
           <div className="space-y-4">
             <div className={`aspect-square overflow-hidden rounded-lg ${isDark ? 'bg-card' : 'bg-white'}`}>
               <img
-                src={product.imageUrl}
+                src={product.images?.[activeImage]?.url || product.imageUrl}
                 alt={product.title}
                 className="w-full h-full object-cover"
               />
             </div>
+            {product.images?.length > 1 && (
+              <div className="grid grid-cols-4 gap-3">
+                {product.images.map((image, index) => (
+                  <button
+                    key={image.publicId || index}
+                    type="button"
+                    onClick={() => setActiveImage(index)}
+                    aria-label={`Show image ${index + 1}`}
+                    className={`aspect-square overflow-hidden rounded-md border-2 ${activeImage === index ? 'border-earth-terracotta' : 'border-transparent opacity-70 hover:opacity-100'}`}
+                  >
+                    <img src={image.url} alt="" className="w-full h-full object-cover" />
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="space-y-6">
             <div>
               <div className="flex items-center gap-2 mb-2">
                 <Badge variant="secondary" className={`${isDark ? 'bg-white/10 text-white' : 'bg-earth-beige text-earth-brown'}`}>{product.category}</Badge>
-                {product.rating && (
+                {product.rating > 0 && (
                   <div className="flex items-center space-x-1">
                     <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
                     <span className={`text-sm ${isDark ? 'text-white/70' : 'text-earth-brown/70'}`}>{product.rating}</span>
@@ -115,9 +155,13 @@ const ProductDetail = () => {
               </div>
               <h1 className={`text-3xl font-bold ${isDark ? 'text-white' : 'text-earth-brown'} mb-4`}>{product.title}</h1>
               <p className="text-2xl font-bold text-earth-terracotta mb-4">₹{product.price}</p>
-              {product.stock && product.stock < 10 && (
+              {outOfStock ? (
+                <p className="text-red-500 font-medium">Out of stock</p>
+              ) : !isClothing && product.stock < 10 ? (
                 <p className="text-orange-400 font-medium">Only {product.stock} left in stock</p>
-              )}
+              ) : isClothing && selectedSize && available < 5 ? (
+                <p className="text-orange-400 font-medium">Only {available} left in size {selectedSize}</p>
+              ) : null}
             </div>
 
             <div>
@@ -128,6 +172,36 @@ const ProductDetail = () => {
             <Card className={`${isDark ? 'bg-card border-border' : 'bg-white border-earth-beige'}`}>
               <CardContent className="p-6">
                 <div className="space-y-4">
+                  {isClothing && (
+                    <div>
+                      <label className={`text-sm font-medium ${isDark ? 'text-white' : 'text-earth-brown'} mb-2 block`}>
+                        Size{selectedSize ? `: ${selectedSize}` : ''}
+                      </label>
+                      <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Size">
+                        {(product.sizes || []).map((entry) => (
+                          <button
+                            key={entry.size}
+                            type="button"
+                            role="radio"
+                            aria-checked={selectedSize === entry.size}
+                            disabled={entry.stock === 0}
+                            onClick={() => selectSize(entry.size)}
+                            className={`px-4 py-2 rounded-md border text-sm font-medium transition-colors ${
+                              selectedSize === entry.size
+                                ? 'bg-earth-terracotta text-white border-earth-terracotta'
+                                : entry.stock === 0
+                                ? 'line-through opacity-40 cursor-not-allowed border-earth-brown/20'
+                                : isDark
+                                ? 'border-white/30 text-white hover:border-earth-terracotta'
+                                : 'border-earth-brown/30 text-earth-brown hover:border-earth-terracotta'
+                            }`}
+                          >
+                            {entry.size}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                   <div>
                     <label className={`text-sm font-medium ${isDark ? 'text-white' : 'text-earth-brown'} mb-2 block`}>Quantity</label>
                     <div className="flex items-center space-x-3">
@@ -145,7 +219,7 @@ const ProductDetail = () => {
                         variant="outline"
                         size="icon"
                         onClick={incrementQuantity}
-                        disabled={product.stock && quantity >= product.stock}
+                        disabled={quantity >= available}
                         className={`${isDark ? 'bg-white/10 border-white/20 text-white hover:bg-white/20' : 'bg-earth-cream border-earth-brown/20 text-earth-brown hover:bg-earth-beige'}`}
                       >
                         <Plus className="h-4 w-4" />
@@ -163,12 +237,12 @@ const ProductDetail = () => {
                     
                     <Button
                       onClick={handleAddToCart}
-                      disabled={product.stock && product.stock === 0}
+                      disabled={outOfStock}
                       className={`w-full transition-all duration-300 ${isAdding ? 'scale-95 bg-green-600 hover:bg-green-600' : ''}`}
                       size="lg"
                     >
                       <ShoppingCart className={`h-5 w-5 mr-2 transition-transform duration-300 ${isAdding ? 'scale-110' : ''}`} />
-                      {product.stock === 0 ? 'Out of Stock' : isAdding ? 'Added!' : 'Add to Cart'}
+                      {outOfStock ? 'Out of Stock' : isAdding ? 'Added!' : 'Add to Cart'}
                     </Button>
                   </div>
                 </div>
@@ -183,13 +257,13 @@ const ProductDetail = () => {
                     <span className={`${isDark ? 'text-white/70' : 'text-earth-brown/70'}`}>Category:</span>
                     <span className={`capitalize ${isDark ? 'text-white' : 'text-earth-brown'}`}>{product.category}</span>
                   </div>
-                  {product.rating && (
+                  {product.rating > 0 && (
                     <div className="flex justify-between">
                       <span className={`${isDark ? 'text-white/70' : 'text-earth-brown/70'}`}>Rating:</span>
                       <span className={`${isDark ? 'text-white' : 'text-earth-brown'}`}>{product.rating}/5</span>
                     </div>
                   )}
-                  {product.stock && (
+                  {!isClothing && product.stock > 0 && (
                     <div className="flex justify-between">
                       <span className={`${isDark ? 'text-white/70' : 'text-earth-brown/70'}`}>Stock:</span>
                       <span className={`${isDark ? 'text-white' : 'text-earth-brown'}`}>{product.stock} units</span>

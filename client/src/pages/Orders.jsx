@@ -6,11 +6,13 @@ import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
 import { ordersAPI } from '../utils/api';
 import { useTheme } from '../context/ThemeContext';
+import usePageTitle from '../hooks/usePageTitle';
 
 const Orders = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const { isDark } = useTheme();
+  usePageTitle('My Orders');
 
   useEffect(() => {
     fetchOrders();
@@ -113,7 +115,7 @@ const Orders = () => {
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className={`text-sm font-medium ${isDark ? 'text-white' : 'text-earth-brown'} truncate`}>
-                              {item.title}
+                              {item.title}{item.size ? ` (${item.size})` : ''}
                             </p>
                             <p className={`text-xs ${isDark ? 'text-white/70' : 'text-earth-brown/70'}`}>
                               Qty: {item.quantity} × ₹{item.price}

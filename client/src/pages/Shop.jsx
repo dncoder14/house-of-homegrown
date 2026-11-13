@@ -7,19 +7,22 @@ import { Card, CardContent } from '../components/ui/card';
 import ProductCard from '../components/ProductCard';
 import { productsAPI } from '../utils/api';
 import { useTheme } from '../context/ThemeContext';
+import usePageTitle from '../hooks/usePageTitle';
 
 const ITEMS_PER_PAGE = 12;
 
 const Shop = () => {
   const [products, setProducts] = useState([]);
-  const [allProducts, setAllProducts] = useState([]);
+  const [total, setTotal] = useState(0);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [loadError, setLoadError] = useState('');
+  const [reloadKey, setReloadKey] = useState(0);
   const [searchParams, setSearchParams] = useSearchParams();
   const { isDark } = useTheme();
-  
-  const [filters, setFilters] = useState({
+  usePageTitle('Shop');
+
+  const readParams = () => ({
     search: searchParams.get('search') || '',
     category: searchParams.get('category') || '',
     sort: searchParams.get('sort') || '',
@@ -27,88 +30,47 @@ const Shop = () => {
     maxPrice: searchParams.get('maxPrice') || ''
   });
 
+  const [filters, setFilters] = useState(readParams);
+  const currentPage = Math.max(parseInt(searchParams.get('page') || '1', 10) || 1, 1);
+  const totalPages = Math.max(Math.ceil(total / ITEMS_PER_PAGE), 1);
+
   useEffect(() => {
-    fetchProducts();
-    fetchCategories();
+    productsAPI.getCategories()
+      .then((response) => setCategories(response.data))
+      .catch((error) => console.error('Error fetching categories:', error));
   }, []);
 
   useEffect(() => {
-    const newSearch = searchParams.get('search') || '';
-    const newCategory = searchParams.get('category') || '';
-    const newSort = searchParams.get('sort') || '';
-    const newMinPrice = searchParams.get('minPrice') || '';
-    const newMaxPrice = searchParams.get('maxPrice') || '';
-    
-    setFilters({
-      search: newSearch,
-      category: newCategory,
-      sort: newSort,
-      minPrice: newMinPrice,
-      maxPrice: newMaxPrice
-    });
-    
-    fetchProducts({ search: newSearch, category: newCategory, sort: newSort, minPrice: newMinPrice, maxPrice: newMaxPrice });
-  }, [searchParams]);
+    const params = readParams();
+    setFilters(params);
 
-  const fetchProducts = async (filterParams = filters) => {
-    try {
-      setLoading(true);
-      const response = await productsAPI.getAll(filterParams);
-      let filteredProducts = response.data;
-      
-      // Apply price filter
-      if (filterParams.minPrice || filterParams.maxPrice) {
-        filteredProducts = filteredProducts.filter(product => {
-          const price = product.price;
-          const min = filterParams.minPrice ? Number(filterParams.minPrice) : 0;
-          const max = filterParams.maxPrice ? Number(filterParams.maxPrice) : Infinity;
-          return price >= min && price <= max;
-        });
-      }
-      
-      // Apply sorting
-      if (filterParams.sort) {
-        filteredProducts.sort((a, b) => {
-          switch (filterParams.sort) {
-            case 'price_low':
-              return a.price - b.price;
-            case 'price_high':
-              return b.price - a.price;
-            case 'newest':
-              return new Date(b.createdAt) - new Date(a.createdAt);
-            default:
-              return 0;
-          }
-        });
-      }
-      
-      setAllProducts(filteredProducts);
-      setCurrentPage(1);
-    } catch (error) {
-      console.error('Error fetching products:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchCategories = async () => {
-    try {
-      const response = await productsAPI.getCategories();
-      setCategories(response.data);
-    } catch (error) {
-      console.error('Error fetching categories:', error);
-    }
-  };
+    let cancelled = false;
+    setLoading(true);
+    setLoadError('');
+    productsAPI.getAll({ ...params, page: currentPage, limit: ITEMS_PER_PAGE })
+      .then((response) => {
+        if (cancelled) return;
+        setProducts(response.data);
+        setTotal(Number(response.headers['x-total-count']) || response.data.length);
+      })
+      .catch(() => {
+        if (!cancelled) setLoadError('We could not load products. Please try again.');
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [searchParams, reloadKey]);
 
   const updateFilters = (newFilters) => {
     const updatedFilters = { ...filters, ...newFilters };
     setFilters(updatedFilters);
-    
+
     const params = new URLSearchParams();
     Object.entries(updatedFilters).forEach(([key, value]) => {
       if (value) params.set(key, value);
     });
-    
+
     setSearchParams(params);
   };
 
@@ -122,14 +84,11 @@ const Shop = () => {
     setSearchParams({});
   };
 
-  // Pagination logic
-  const totalPages = Math.ceil(allProducts.length / ITEMS_PER_PAGE);
-  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const endIndex = startIndex + ITEMS_PER_PAGE;
-  const currentProducts = allProducts.slice(startIndex, endIndex);
-
   const goToPage = (page) => {
-    setCurrentPage(page);
+    const params = new URLSearchParams(searchParams);
+    if (page > 1) params.set('page', String(page));
+    else params.delete('page');
+    setSearchParams(params);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -244,7 +203,7 @@ const Shop = () => {
           <main className="flex-1">
             <div className="flex items-center justify-between mb-6">
               <p className="text-muted-foreground">
-                {loading ? 'Loading...' : `${allProducts.length} products found`}
+                {loading ? 'Loading...' : `${total} products found`}
               </p>
               {totalPages > 1 && (
                 <p className="text-muted-foreground text-sm">
@@ -263,7 +222,14 @@ const Shop = () => {
                   </div>
                 ))}
               </div>
-            ) : allProducts.length === 0 ? (
+            ) : loadError ? (
+              <div className="text-center py-12">
+                <p className="text-muted-foreground text-lg">{loadError}</p>
+                <Button variant="outline" onClick={() => setReloadKey((k) => k + 1)} className="mt-4">
+                  Retry
+                </Button>
+              </div>
+            ) : products.length === 0 ? (
               <div className="text-center py-12">
                 <p className="text-muted-foreground text-lg">No products found matching your criteria.</p>
                 <Button
@@ -277,7 +243,7 @@ const Shop = () => {
             ) : (
               <>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {currentProducts.map((product) => (
+                  {products.map((product) => (
                     <ProductCard key={product.id} product={product} />
                   ))}
                 </div>

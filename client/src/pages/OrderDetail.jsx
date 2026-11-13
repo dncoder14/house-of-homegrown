@@ -4,7 +4,8 @@ import { ArrowLeft, Package, MapPin, CreditCard, Calendar, RotateCcw, Truck } fr
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
-import { ordersAPI } from '../utils/api';
+import { ordersAPI, getErrorMessage } from '../utils/api';
+import usePageTitle from '../hooks/usePageTitle';
 import { useTheme } from '../context/ThemeContext';
 import toast from 'react-hot-toast';
 
@@ -13,6 +14,7 @@ const OrderDetail = () => {
   const navigate = useNavigate();
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [cancelling, setCancelling] = useState(false);
   const { isDark } = useTheme();
 
   useEffect(() => {
@@ -42,7 +44,26 @@ const OrderDetail = () => {
     }
   };
 
+  usePageTitle('Order details');
+
+  const canCancel = order && ['Placed', 'Processing'].includes(order.status);
+
+  const handleCancel = async () => {
+    if (!window.confirm('Cancel this order? This cannot be undone.')) return;
+    setCancelling(true);
+    try {
+      const response = await ordersAPI.cancel(order._id);
+      setOrder(response.data);
+      toast.success('Order cancelled');
+    } catch (error) {
+      toast.error(getErrorMessage(error, 'Could not cancel order'));
+    } finally {
+      setCancelling(false);
+    }
+  };
+
   const isReturnEligible = (orderDate, status) => {
+    if (status !== 'Delivered') return false;
     const returnPolicyDays = 14;
     const orderDateTime = new Date(orderDate);
     const currentTime = new Date();
@@ -52,7 +73,7 @@ const OrderDetail = () => {
   };
 
   const handleReturn = () => {
-    toast.success(`Return request initiated for order ${order._id.slice(-8)}. You will be contacted within 24 hours.`);
+    toast(`To start a return, email hello@houseofhomegrown.com with order ID ${order._id.slice(-8)}.`, { duration: 8000 });
   };
 
   const getTrackingSteps = (status) => {
@@ -122,6 +143,11 @@ const OrderDetail = () => {
                   <span className="text-2xl font-bold text-earth-terracotta">
                     ₹{order.totalAmount.toLocaleString()}
                   </span>
+                  {canCancel && (
+                    <Button variant="outline" size="sm" onClick={handleCancel} disabled={cancelling} className="whitespace-nowrap text-red-600">
+                      {cancelling ? 'Cancelling...' : 'Cancel Order'}
+                    </Button>
+                  )}
                   {isReturnEligible(order.createdAt, order.status) && (
                     <Button variant="outline" size="sm" onClick={handleReturn} className="whitespace-nowrap">
                       <RotateCcw className="h-4 w-4 mr-2" />
@@ -204,7 +230,7 @@ const OrderDetail = () => {
                       />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h4 className={`font-medium ${isDark ? 'text-white' : 'text-earth-brown'} truncate`}>{item.title}</h4>
+                      <h4 className={`font-medium ${isDark ? 'text-white' : 'text-earth-brown'} truncate`}>{item.title}{item.size ? ` (${item.size})` : ''}</h4>
                       <p className={`text-sm ${isDark ? 'text-white/70' : 'text-earth-brown/70'}`}>
                         Quantity: {item.quantity}
                       </p>

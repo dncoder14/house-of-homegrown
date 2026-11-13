@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { useCart } from '../context/CartContext';
-import { ordersAPI, profileAPI } from '../utils/api';
+import { ordersAPI, profileAPI, getErrorMessage } from '../utils/api';
+import usePageTitle from '../hooks/usePageTitle';
 import { useTheme } from '../context/ThemeContext';
 import { Plus, MapPin } from 'lucide-react';
 
@@ -22,14 +23,18 @@ const Checkout = () => {
   const [addresses, setAddresses] = useState([]);
   const [selectedAddress, setSelectedAddress] = useState(null);
   const [showNewAddress, setShowNewAddress] = useState(false);
+  const [placed, setPlaced] = useState(false);
   
-  const { cart, getTotalPrice, clearCart } = useCart();
+  const { cart, getTotalPrice, clearCart, refreshCart } = useCart();
   const navigate = useNavigate();
   const { isDark } = useTheme();
 
+  usePageTitle('Checkout');
+
   useEffect(() => {
+    refreshCart();
     fetchAddresses();
-  }, []);
+  }, [refreshCart]);
 
   const fetchAddresses = async () => {
     try {
@@ -76,28 +81,30 @@ const Checkout = () => {
       const orderData = {
         items: cart.map(item => ({
           productId: item.id,
-          title: item.title,
-          price: item.price,
-          quantity: item.quantity,
-          imageUrl: item.imageUrl
+          size: item.size || undefined,
+          quantity: item.quantity
         })),
         shippingAddress,
         totalAmount: getTotalPrice()
       };
 
       const response = await ordersAPI.create(orderData);
+      setPlaced(true);
       clearCart();
-      navigate('/order-success', { state: { orderId: response.data.order._id } });
+      navigate('/order-success', { state: { orderId: response.data.order._id }, replace: true });
     } catch (error) {
-      setError(error.response?.data?.message || 'Failed to place order');
+      const code = error.response?.data?.code;
+      if (['PRICE_CHANGED', 'INSUFFICIENT_STOCK', 'ITEM_UNAVAILABLE', 'SIZE_REQUIRED'].includes(code)) {
+        await refreshCart();
+      }
+      setError(getErrorMessage(error, 'Failed to place order'));
     } finally {
       setLoading(false);
     }
   };
 
-  if (cart.length === 0) {
-    navigate('/cart');
-    return null;
+  if (cart.length === 0 && !placed) {
+    return <Navigate to="/cart" replace />;
   }
 
   return (
@@ -337,10 +344,10 @@ const Checkout = () => {
               <CardContent className="space-y-4">
                 <div className="space-y-3">
                   {cart.map((item) => (
-                    <div key={item.id} className="flex justify-between items-center">
+                    <div key={item.key} className="flex justify-between items-center">
                       <div className="flex-1">
                         <p className={`font-medium text-sm ${isDark ? 'text-white' : ''}`}>{item.title}</p>
-                        <p className={`text-xs ${isDark ? 'text-white/70' : 'text-earth-brown/70'}`}>Qty: {item.quantity}</p>
+                        <p className={`text-xs ${isDark ? 'text-white/70' : 'text-earth-brown/70'}`}>{item.size ? `Size: ${item.size} • ` : ''}Qty: {item.quantity}</p>
                       </div>
                       <span className={`font-medium ${isDark ? 'text-white' : ''}`}>₹{(item.price * item.quantity).toLocaleString()}</span>
                     </div>

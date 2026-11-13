@@ -6,17 +6,19 @@ import { Card, CardContent } from '../components/ui/card';
 import ProductCard from '../components/ProductCard';
 import { productsAPI } from '../utils/api';
 import { useTheme } from '../context/ThemeContext';
+import usePageTitle from '../hooks/usePageTitle';
 
 const Home = () => {
   const [featuredProducts, setFeaturedProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const { isDark } = useTheme();
+  usePageTitle();
 
   useEffect(() => {
     const fetchFeaturedProducts = async () => {
       try {
-        const response = await productsAPI.getAll();
-        setFeaturedProducts(response.data.slice(0, 6));
+        const response = await productsAPI.getAll({ limit: 6 });
+        setFeaturedProducts(response.data);
       } catch (error) {
         console.error('Error fetching products:', error);
       } finally {

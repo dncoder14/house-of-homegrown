@@ -5,6 +5,7 @@ import { Input } from '../components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import usePageTitle from '../hooks/usePageTitle';
 import { authAPI } from '../utils/api';
 
 const Signup = () => {
@@ -19,6 +20,7 @@ const Signup = () => {
   
   const { login } = useAuth();
   const { isDark } = useTheme();
+  usePageTitle('Sign up');
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -40,8 +42,8 @@ const Signup = () => {
       return;
     }
 
-    if (formData.password.length < 6) {
-      setError('Password must be at least 6 characters');
+    if (formData.password.length < 8) {
+      setError('Password must be at least 8 characters');
       setLoading(false);
       return;
     }
@@ -142,7 +144,7 @@ const Signup = () => {
                 required
                 value={formData.password}
                 onChange={handleChange}
-                placeholder="Create a password (min 6 characters)"
+                placeholder="Create a password (min 8 characters)"
               />
             </div>
 

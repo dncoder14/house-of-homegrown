@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Trash2, Plus, Minus, ShoppingBag } from 'lucide-react';
 import { Button } from '../components/ui/button';
@@ -5,11 +6,17 @@ import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import usePageTitle from '../hooks/usePageTitle';
 
 const Cart = () => {
-  const { cart, updateQuantity, removeFromCart, getTotalPrice, getTotalItems } = useCart();
+  const { cart, updateQuantity, removeFromCart, refreshCart, getTotalPrice, getTotalItems } = useCart();
   const { isAuthenticated } = useAuth();
   const { isDark } = useTheme();
+  usePageTitle('Your Cart');
+
+  useEffect(() => {
+    refreshCart();
+  }, [refreshCart]);
 
   if (cart.length === 0) {
     return (
@@ -34,7 +41,7 @@ const Cart = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-4">
             {cart.map((item) => (
-              <Card key={item.id} className={`${isDark ? 'bg-black/50 border-white/10' : 'bg-white border-earth-beige'}`}>
+              <Card key={item.key} className={`${isDark ? 'bg-black/50 border-white/10' : 'bg-white border-earth-beige'}`}>
                 <CardContent className="p-6">
                   <div className="flex flex-col sm:flex-row gap-4">
                     <div className="w-full sm:w-24 h-24 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
@@ -47,8 +54,10 @@ const Cart = () => {
                     
                     <div className="flex-1 space-y-2">
                       <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-earth-brown'}`}>{item.title}</h3>
-                      <p className={`text-sm ${isDark ? 'text-white/70' : 'text-earth-brown/70'} capitalize`}>{item.category}</p>
-                      <p className="text-lg font-bold text-earth-terracotta">₹{item.price}</p>
+                      <p className={`text-sm ${isDark ? 'text-white/70' : 'text-earth-brown/70'} capitalize`}>
+                        {item.category}{item.size ? ` • Size: ${item.size}` : ''}
+                      </p>
+                      <p className="text-lg font-bold text-earth-terracotta">₹{item.price.toLocaleString()}</p>
                     </div>
                     
                     <div className="flex flex-col sm:items-end space-y-2">
@@ -56,7 +65,7 @@ const Cart = () => {
                         <Button
                           variant="outline"
                           size="icon"
-                          onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                          onClick={() => updateQuantity(item.key, item.quantity - 1)}
                           className="h-8 w-8"
                         >
                           <Minus className="h-3 w-3" />
@@ -65,7 +74,8 @@ const Cart = () => {
                         <Button
                           variant="outline"
                           size="icon"
-                          onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                          onClick={() => updateQuantity(item.key, item.quantity + 1)}
+                          disabled={item.quantity >= (item.stock || 20)}
                           className="h-8 w-8"
                         >
                           <Plus className="h-3 w-3" />
@@ -79,7 +89,7 @@ const Cart = () => {
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => removeFromCart(item.id)}
+                          onClick={() => removeFromCart(item.key)}
                           className="h-8 w-8 text-red-500 hover:text-red-700"
                         >
                           <Trash2 className="h-4 w-4" />
