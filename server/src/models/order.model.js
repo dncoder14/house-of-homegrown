@@ -4,7 +4,8 @@ const orderSchema = new mongoose.Schema({
   userId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: true
+    required: true,
+    index: true
   },
   items: [{
     productId: {
@@ -17,44 +18,29 @@ const orderSchema = new mongoose.Schema({
     },
     price: {
       type: Number,
-      required: true
+      required: true,
+      min: 0
     },
     quantity: {
       type: Number,
       required: true,
       min: 1
     },
+    size: String,
     imageUrl: String
   }],
   shippingAddress: {
-    name: {
-      type: String,
-      required: true
-    },
-    phone: {
-      type: String,
-      required: true
-    },
-    street: {
-      type: String,
-      required: true
-    },
-    city: {
-      type: String,
-      required: true
-    },
-    state: {
-      type: String,
-      required: true
-    },
-    pincode: {
-      type: String,
-      required: true
-    }
+    name: { type: String, required: true },
+    phone: { type: String, required: true },
+    street: { type: String, required: true },
+    city: { type: String, required: true },
+    state: { type: String, required: true },
+    pincode: { type: String, required: true }
   },
   totalAmount: {
     type: Number,
-    required: true
+    required: true,
+    min: 0
   },
   paymentMethod: {
     type: String,
@@ -68,5 +54,7 @@ const orderSchema = new mongoose.Schema({
 }, {
   timestamps: true
 });
+
+orderSchema.index({ status: 1, createdAt: -1 });
 
 export default mongoose.model('Order', orderSchema);
