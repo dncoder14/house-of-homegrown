@@ -1,188 +1,79 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/button';
-import { Input } from '../components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { Input, Field } from '../components/ui/input';
+import { PasswordInput } from '../components/ui/password-input';
+import AuthLayout from '../components/AuthLayout';
 import { useAuth } from '../context/AuthContext';
-import { useTheme } from '../context/ThemeContext';
 import usePageTitle from '../hooks/usePageTitle';
-import { authAPI } from '../utils/api';
+import { authAPI, getErrorMessage } from '../utils/api';
 
 const Signup = () => {
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    password: '',
-    confirmPassword: ''
-  });
+  const [formData, setFormData] = useState({ name: '', email: '', password: '', confirmPassword: '' });
+  const [fieldErrors, setFieldErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  
+
   const { login } = useAuth();
-  const { isDark } = useTheme();
   usePageTitle('Sign up');
   const navigate = useNavigate();
 
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+    setFieldErrors({ ...fieldErrors, [e.target.name]: undefined });
     setError('');
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const errors = {};
+    if (formData.password.length < 8) errors.password = 'Use at least 8 characters.';
+    if (formData.password !== formData.confirmPassword) errors.confirmPassword = 'Passwords do not match.';
+    if (Object.keys(errors).length) {
+      setFieldErrors(errors);
+      document.getElementById(errors.password ? 'password' : 'confirmPassword')?.focus();
+      return;
+    }
+
     setLoading(true);
     setError('');
-
-    if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match');
-      setLoading(false);
-      return;
-    }
-
-    if (formData.password.length < 8) {
-      setError('Password must be at least 8 characters');
-      setLoading(false);
-      return;
-    }
-
     try {
       const { confirmPassword, ...signupData } = formData;
       const response = await authAPI.signup(signupData);
       login(response.data.user, response.data.token);
       navigate('/');
-    } catch (error) {
-      setError(error.response?.data?.message || 'Signup failed');
+    } catch (err) {
+      setError(getErrorMessage(err, 'Signup failed'));
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className={`min-h-screen ${isDark ? 'bg-background' : 'bg-earth-cream/30'} flex items-center justify-center py-12 px-4 relative overflow-hidden`}>
-      {/* Decorative Rangoli Patterns */}
-      <div className="absolute inset-0 pointer-events-none">
-        <img 
-          src="/pattern2.png" 
-          alt="" 
-          className="absolute top-16 right-16 w-26 h-26 opacity-78 animate-spin-slow"
-        />
-        <img 
-          src="/pattern3.png" 
-          alt="" 
-          className="absolute bottom-16 left-16 w-24 h-24 opacity-75 animate-pulse"
-        />
-        <img 
-          src="/pattern1.png" 
-          alt="" 
-          className="absolute top-1/2 right-8 w-20 h-20 opacity-70 animate-float"
-        />
-        <img 
-          src="/pattern3.png" 
-          alt="" 
-          className="absolute top-1/4 left-8 w-18 h-18 opacity-65 animate-bounce-slow"
-        />
-        <img 
-          src="/pattern2.png" 
-          alt="" 
-          className="absolute bottom-1/4 left-12 w-16 h-16 opacity-60 animate-pulse"
-        />
-      </div>
-      <Card className={`w-full max-w-md relative z-10 ${isDark ? 'bg-black/50 border-white/10' : 'bg-white border-earth-beige'}`}>
-        <CardHeader className="text-center">
-          <CardTitle className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-earth-brown'}`}>Create Account</CardTitle>
-          <p className={`${isDark ? 'text-white/70' : 'text-earth-brown/70'}`}>Join our sustainable community</p>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {error && (
-              <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-md text-sm">
-                {error}
-              </div>
-            )}
-            
-            <div>
-              <label htmlFor="name" className={`block text-sm font-medium ${isDark ? 'text-white' : 'text-earth-brown'} mb-1`}>
-                Full Name
-              </label>
-              <Input
-                id="name"
-                name="name"
-                type="text"
-                required
-                value={formData.name}
-                onChange={handleChange}
-                placeholder="Enter your full name"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="email" className={`block text-sm font-medium ${isDark ? 'text-white' : 'text-earth-brown'} mb-1`}>
-                Email
-              </label>
-              <Input
-                id="email"
-                name="email"
-                type="email"
-                required
-                value={formData.email}
-                onChange={handleChange}
-                placeholder="Enter your email"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="password" className={`block text-sm font-medium ${isDark ? 'text-white' : 'text-earth-brown'} mb-1`}>
-                Password
-              </label>
-              <Input
-                id="password"
-                name="password"
-                type="password"
-                required
-                value={formData.password}
-                onChange={handleChange}
-                placeholder="Create a password (min 8 characters)"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="confirmPassword" className={`block text-sm font-medium ${isDark ? 'text-white' : 'text-earth-brown'} mb-1`}>
-                Confirm Password
-              </label>
-              <Input
-                id="confirmPassword"
-                name="confirmPassword"
-                type="password"
-                required
-                value={formData.confirmPassword}
-                onChange={handleChange}
-                placeholder="Confirm your password"
-              />
-            </div>
-
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={loading}
-            >
-              {loading ? 'Creating Account...' : 'Create Account'}
-            </Button>
-          </form>
-
-          <div className="mt-6 text-center">
-            <p className={`text-sm ${isDark ? 'text-white/70' : 'text-earth-brown/70'}`}>
-              Already have an account?{' '}
-              <Link to="/login" className={`${isDark ? 'text-white hover:text-white/80' : 'text-earth-terracotta hover:underline'} font-medium`}>
-                Sign in
-              </Link>
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+    <AuthLayout
+      title="Create your account"
+      subtitle="Track orders and check out faster."
+      error={error}
+      footer={<>Already have an account? <Link to="/login" className="font-semibold text-primary hover:underline">Log in</Link></>}
+    >
+      <form onSubmit={handleSubmit} className="space-y-5" noValidate>
+        <Field label="Full name" htmlFor="name">
+          <Input id="name" name="name" autoComplete="name" required autoFocus value={formData.name} onChange={handleChange} />
+        </Field>
+        <Field label="Email" htmlFor="email">
+          <Input id="email" name="email" type="email" autoComplete="email" required value={formData.email} onChange={handleChange} placeholder="you@example.com" />
+        </Field>
+        <Field label="Password" htmlFor="password" error={fieldErrors.password} hint="At least 8 characters.">
+          <PasswordInput id="password" name="password" autoComplete="new-password" required value={formData.password} onChange={handleChange} aria-invalid={!!fieldErrors.password} aria-describedby={fieldErrors.password ? 'password-error' : 'password-hint'} />
+        </Field>
+        <Field label="Confirm password" htmlFor="confirmPassword" error={fieldErrors.confirmPassword}>
+          <PasswordInput id="confirmPassword" name="confirmPassword" autoComplete="new-password" required value={formData.confirmPassword} onChange={handleChange} aria-invalid={!!fieldErrors.confirmPassword} aria-describedby={fieldErrors.confirmPassword ? 'confirmPassword-error' : undefined} />
+        </Field>
+        <Button type="submit" size="lg" className="w-full" loading={loading}>
+          {loading ? 'Creating account…' : 'Create account'}
+        </Button>
+      </form>
+    </AuthLayout>
   );
 };
 

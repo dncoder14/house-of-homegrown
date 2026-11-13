@@ -2,11 +2,38 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Leaf, Heart, Users } from 'lucide-react';
 import { Button } from '../components/ui/button';
-import { Card, CardContent } from '../components/ui/card';
-import ProductCard from '../components/ProductCard';
+import { ProductGrid, ProductGridSkeleton } from '../components/ProductGrid';
+import CategoryTile from '../components/CategoryTile';
 import { productsAPI } from '../utils/api';
 import { useTheme } from '../context/ThemeContext';
 import usePageTitle from '../hooks/usePageTitle';
+
+const FEATURED_CATEGORIES = [
+  { name: 'Sarees', image: '/saree.png', link: '/category/clothing?subcategory=sarees' },
+  { name: 'Kurtas', image: '/kurtas.png', link: '/category/clothing?subcategory=kurtas' },
+  { name: 'Lehengas', image: '/lehnga.png', link: '/category/clothing?subcategory=lehengas' },
+  { name: 'Jewelry', image: '/jewellery.png', link: '/category/jewelry' },
+  { name: 'Spices', image: '/spices.png', link: '/category/indian-taste?subcategory=spices' },
+  { name: 'Pottery', image: '/pottery.png', link: '/category/pottery' },
+  { name: 'Textiles', image: '/textile.png', link: '/category/textiles' },
+  { name: 'Tea', image: '/tea.png', link: '/category/indian-taste?subcategory=tea' },
+];
+
+const VALUES = [
+  { icon: Leaf, title: 'Sustainable', description: 'Eco-friendly products made with natural materials and traditional methods.' },
+  { icon: Heart, title: 'Handcrafted', description: 'Each product is lovingly crafted by skilled artisans across India.' },
+  { icon: Users, title: 'Community', description: 'Supporting local communities and preserving traditional crafts.' },
+];
+
+const SectionHeading = ({ title, description, action }) => (
+  <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+    <div>
+      <h2 className="text-3xl sm:text-4xl">{title}</h2>
+      {description && <p className="mt-2 max-w-xl text-muted-foreground">{description}</p>}
+    </div>
+    {action}
+  </div>
+);
 
 const Home = () => {
   const [featuredProducts, setFeaturedProducts] = useState([]);
@@ -15,222 +42,100 @@ const Home = () => {
   usePageTitle();
 
   useEffect(() => {
-    const fetchFeaturedProducts = async () => {
-      try {
-        const response = await productsAPI.getAll({ limit: 6 });
-        setFeaturedProducts(response.data);
-      } catch (error) {
-        console.error('Error fetching products:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchFeaturedProducts();
+    productsAPI.getAll({ limit: 8 })
+      .then((response) => setFeaturedProducts(response.data))
+      .catch((error) => console.error('Error fetching products:', error))
+      .finally(() => setLoading(false));
   }, []);
 
-  const featuredCategories = [
-    { name: 'Sarees', image: '/saree.png', link: '/category/clothing?subcategory=sarees' },
-    { name: 'Kurtas', image: '/kurtas.png', link: '/category/clothing?subcategory=kurtas' },
-    { name: 'Lehengas', image: '/lehnga.png', link: '/category/clothing?subcategory=lehengas' },
-    { name: 'Jewelry', image: '/jewellery.png', link: '/category/jewelry' },
-    { name: 'Spices', image: '/spices.png', link: '/category/indian-taste?subcategory=spices' },
-    { name: 'Pottery', image: '/pottery.png', link: '/category/pottery' },
-    { name: 'Textiles', image: '/textile.png', link: '/category/textiles' },
-    { name: 'Tea', image: '/tea.png', link: '/category/indian-taste?subcategory=tea' },
-  ];
-
-  const values = [
-    {
-      icon: <Leaf className="h-8 w-8 text-earth-sage" />,
-      title: 'Sustainable',
-      description: 'Eco-friendly products made with natural materials and traditional methods.'
-    },
-    {
-      icon: <Heart className="h-8 w-8 text-earth-terracotta" />,
-      title: 'Handcrafted',
-      description: 'Each product is lovingly crafted by skilled artisans across India.'
-    },
-    {
-      icon: <Users className="h-8 w-8 text-earth-brown" />,
-      title: 'Community',
-      description: 'Supporting local communities and preserving traditional crafts.'
-    }
-  ];
-
   return (
-    <div className="min-h-screen relative overflow-hidden">
-      {/* Decorative Rangoli Patterns */}
-      <div className="absolute inset-0 pointer-events-none">
-        {/* Hero Section Patterns */}
-        <img 
-          src="/pattern1.png" 
-          alt="" 
-          className="absolute top-32 left-16 w-20 h-20 opacity-25 animate-spin-slow"
+    <div>
+      {/* Hero: the photograph carries the brand; copy sits on a scrim anchored to the left */}
+      <section className="relative isolate overflow-hidden bg-[hsl(22_30%_10%)]">
+        <img
+          src={isDark ? '/hero.webp' : '/hero_light.webp'}
+          alt=""
+          fetchpriority="high"
+          className="absolute inset-0 -z-20 h-full w-full origin-right object-cover object-right lg:scale-[1.12]"
         />
-        <img 
-          src="/pattern2.png" 
-          alt="" 
-          className="absolute top-32 right-16 w-20 h-20 opacity-25 animate-pulse"
-        />
-        <img 
-          src="/pattern3.png" 
-          alt="" 
-          className="absolute bottom-32 left-16 w-18 h-18 opacity-20 animate-float"
-        />
-        <img 
-          src="/pattern1.png" 
-          alt="" 
-          className="absolute bottom-32 right-16 w-18 h-18 opacity-20 animate-bounce-slow"
-        />
-      </div>
-      <section className="relative min-h-screen">
-        <div className="absolute inset-0">
-          <img
-            src={isDark ? "/hero.png" : "/hero_light.png"}
-            alt="House of Homegrown Hero"
-            className="w-full h-full object-cover"
-          />
-          <div className={`absolute inset-0 ${isDark ? 'bg-black/20' : 'bg-black/40'}`}></div>
-        </div>
-        {/* Hero Section Rangoli Patterns */}
-        <div className="absolute inset-0 pointer-events-none">
-          <img 
-            src="/pattern1.png" 
-            alt="" 
-            className="absolute top-20 left-20 w-24 h-24 opacity-60 animate-spin-slow"
-          />
-          <img 
-            src="/pattern2.png" 
-            alt="" 
-            className="absolute top-20 right-20 w-24 h-24 opacity-60 animate-pulse"
-          />
-        </div>
-        <div className="relative z-10 container mx-auto px-4 py-12 md:py-20">
-          <div className="max-w-2xl">
-            <h1 className="text-3xl md:text-4xl lg:text-6xl font-bold text-white mb-4 md:mb-6 drop-shadow-2xl leading-tight">
-              Celebrating India's
-              <span className="text-white block">Heritage & Craft</span>
+        <div className="absolute inset-0 -z-10 bg-gradient-to-r from-[hsl(22_36%_8%/0.88)] via-[hsl(22_36%_8%/0.55)] to-transparent md:via-[hsl(22_36%_8%/0.35)]" />
+        <div className="absolute inset-x-0 bottom-0 -z-10 h-24 bg-gradient-to-t from-background/20 to-transparent" />
+
+        <div className="page-container flex min-h-[34rem] items-center py-16 md:min-h-[40rem] lg:min-h-[44rem]">
+          <div className="max-w-xl animate-fade-up text-[hsl(36_30%_96%)]">
+            <h1 className="text-[2.5rem] leading-[1.05] sm:text-5xl lg:text-[3.5rem]">
+              Celebrating India's heritage and craft
             </h1>
-            <p className="text-base md:text-lg lg:text-xl text-white/95 mb-6 md:mb-8 max-w-xl drop-shadow-xl leading-relaxed">
-              Discover premium, sustainable products crafted by local artisans. 
-              Every purchase supports traditional craftsmanship and sustainable living.
+            <p className="mt-5 max-w-md text-lg leading-relaxed text-[hsl(36_24%_90%)]">
+              Premium, sustainable products made by local artisans. Every purchase supports traditional craftsmanship.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4">
-              <Link to="/shop">
-                <Button size="lg" className="bg-earth-terracotta hover:bg-earth-brown text-white shadow-lg w-full sm:w-auto">
-                  Shop Now <ArrowRight className="ml-2 h-5 w-5" />
-                </Button>
-              </Link>
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+              <Button asChild size="lg" className="bg-[hsl(17_58%_58%)] text-[hsl(22_40%_8%)] hover:bg-[hsl(17_62%_66%)]">
+                <Link to="/shop">Shop now <ArrowRight className="h-4 w-4" /></Link>
+              </Button>
+              <Button asChild size="lg" variant="outline" className="border-white/40 bg-white/10 text-white backdrop-blur hover:bg-white/20 hover:text-white">
+                <Link to="/categories">Browse categories</Link>
+              </Button>
             </div>
           </div>
         </div>
       </section>
 
-      <section className={`py-16 ${isDark ? 'bg-card' : 'bg-earth-cream/50'} relative overflow-hidden`}>
-        {/* No patterns in Featured Categories section */}
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className={`text-3xl font-bold ${isDark ? 'text-foreground' : 'text-earth-brown'} mb-4`}>Featured Categories</h2>
-            <p className={`body-font ${isDark ? 'text-muted-foreground' : 'text-earth-brown/70'}`}>Discover authentic Indian products</p>
+      <section className="page-container pt-16 sm:pt-20" aria-labelledby="home-categories">
+        <SectionHeading
+          title={<span id="home-categories">Shop by craft</span>}
+          description="From handwoven drapes to small-batch pantry staples."
+          action={
+            <Button asChild variant="ghost" className="self-start sm:self-auto">
+              <Link to="/categories">All categories <ArrowRight className="h-4 w-4" /></Link>
+            </Button>
+          }
+        />
+        <ul className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-8 lg:gap-4">
+          {FEATURED_CATEGORIES.map((category) => (
+            <li key={category.name}>
+              <CategoryTile name={category.name} image={category.image} to={category.link} />
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <section className="page-container pt-20 sm:pt-24" aria-labelledby="home-featured">
+        <SectionHeading
+          title={<span id="home-featured">Featured products</span>}
+          description="Hand-picked from our latest arrivals."
+          action={
+            <Button asChild variant="outline" className="self-start sm:self-auto">
+              <Link to="/shop">View all products <ArrowRight className="h-4 w-4" /></Link>
+            </Button>
+          }
+        />
+        {loading ? <ProductGridSkeleton count={8} /> : <ProductGrid products={featuredProducts} />}
+      </section>
+
+      <section className="page-container pt-20 sm:pt-24" aria-labelledby="home-values">
+        <div className="rounded-2xl border border-border bg-surface px-6 py-12 shadow-soft sm:px-12 sm:py-16">
+          <div className="mx-auto max-w-2xl text-center">
+            <h2 id="home-values" className="text-3xl sm:text-4xl">Made slowly, made well</h2>
+            <p className="mt-3 text-muted-foreground">
+              We work directly with artisan communities so what you receive is honest, durable and carries a story.
+            </p>
           </div>
-          <div className="grid grid-cols-4 md:grid-cols-8 gap-3 md:gap-4 mb-6 md:mb-8">
-            {featuredCategories.map((category) => (
-              <Link key={category.name} to={category.link} className="group">
-                <div className="flex flex-col items-center">
-                  <div className="w-16 h-16 md:w-20 md:h-20 lg:w-24 lg:h-24 mb-2 md:mb-3 group-hover:scale-110 transition-transform duration-300">
-                    <img
-                      src={category.image}
-                      alt={category.name}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <span className={`text-xs md:text-sm font-medium text-center ${isDark ? 'text-foreground group-hover:text-white' : 'text-earth-brown group-hover:text-earth-terracotta'} transition-colors leading-tight`}>
-                    {category.name}
-                  </span>
-                </div>
-              </Link>
+          <div className="mt-12 grid gap-10 md:grid-cols-3 md:gap-8">
+            {VALUES.map(({ icon: Icon, title, description }) => (
+              <div key={title} className="flex flex-col items-center text-center">
+                <span className="flex h-12 w-12 items-center justify-center rounded-full bg-accent text-accent-foreground">
+                  <Icon className="h-5 w-5" aria-hidden="true" />
+                </span>
+                <h3 className="mt-5 text-lg">{title}</h3>
+                <p className="mt-2 max-w-xs text-[0.9375rem] leading-relaxed text-muted-foreground">{description}</p>
+              </div>
             ))}
           </div>
-          <div className="text-center">
-            <Link to="/categories">
-              <Button variant="outline" size="sm" className="body-font">
-                View All Categories <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      <section className={`py-16 ${isDark ? 'bg-secondary' : 'bg-earth-cream/50'} relative overflow-hidden`}>
-        {/* No patterns in Featured Products section */}
-        <div className="container mx-auto px-4">
-          <h2 className={`text-3xl font-bold text-center ${isDark ? 'text-foreground' : 'text-earth-brown'} mb-12`}>Featured Products</h2>
-          {loading ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-              {[...Array(6)].map((_, i) => (
-                <div key={i} className="animate-pulse">
-                  <div className="bg-gray-200 aspect-square rounded-lg mb-4"></div>
-                  <div className="h-4 bg-gray-200 rounded mb-2"></div>
-                  <div className="h-4 bg-gray-200 rounded w-2/3"></div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-              {featuredProducts.map((product) => (
-                <ProductCard key={product.id} product={product} />
-              ))}
-            </div>
-          )}
-          <div className="text-center mt-8">
-            <Link to="/shop">
-              <Button variant="outline" size="lg">
-                View All Products <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      <section className={`py-16 ${isDark ? 'bg-card' : 'bg-earth-cream/30'} relative overflow-hidden`}>
-        {/* Decorative Rangoli Patterns - Symmetrical */}
-        <div className="absolute inset-0 pointer-events-none">
-          <img 
-            src="/pattern3.png" 
-            alt="" 
-            className={`absolute top-8 left-8 w-12 h-12 ${isDark ? 'opacity-70' : 'opacity-15'} animate-spin-slow`}
-          />
-          <img 
-            src="/pattern1.png" 
-            alt="" 
-            className={`absolute top-8 right-8 w-12 h-12 ${isDark ? 'opacity-70' : 'opacity-15'} animate-float`}
-          />
-          <img 
-            src="/pattern2.png" 
-            alt="" 
-            className={`absolute bottom-8 left-8 w-12 h-12 ${isDark ? 'opacity-70' : 'opacity-15'} animate-pulse`}
-          />
-          <img 
-            src="/pattern3.png" 
-            alt="" 
-            className={`absolute bottom-8 right-8 w-12 h-12 ${isDark ? 'opacity-70' : 'opacity-15'} animate-bounce-slow`}
-          />
-        </div>
-        <div className="container mx-auto px-4 relative z-10">
-          <h2 className={`text-3xl font-bold text-center ${isDark ? 'text-foreground' : 'text-earth-brown'} mb-12`}>Our Values</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {values.map((value, index) => (
-              <Card key={index} className={`text-center p-6 ${isDark ? 'bg-card border-border' : 'bg-white border-earth-beige'}`}>
-                <CardContent className="pt-6">
-                  <div className="flex justify-center mb-4">
-                    {value.icon}
-                  </div>
-                  <h3 className={`text-xl font-semibold ${isDark ? 'text-foreground' : 'text-earth-brown'} mb-3`}>{value.title}</h3>
-                  <p className={`body-font ${isDark ? 'text-muted-foreground' : 'text-earth-brown/70'}`}>{value.description}</p>
-                </CardContent>
-              </Card>
-            ))}
+          <div className="mt-12 text-center">
+            <Button asChild variant="outline">
+              <Link to="/about">Read our story</Link>
+            </Button>
           </div>
         </div>
       </section>

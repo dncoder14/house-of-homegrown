@@ -1,4 +1,5 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { lazy, Suspense, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
@@ -9,25 +10,45 @@ import ProtectedRoute from './components/ProtectedRoute';
 
 import Home from './pages/Home';
 import Shop from './pages/Shop';
-import Categories from './pages/Categories';
-import CategoryPage from './pages/CategoryPage';
-import ProductDetail from './pages/ProductDetail';
-import Login from './pages/Login';
-import Signup from './pages/Signup';
-import Cart from './pages/Cart';
-import Checkout from './pages/Checkout';
-import OrderSuccess from './pages/OrderSuccess';
-import Orders from './pages/Orders';
-import OrderDetail from './pages/OrderDetail';
-import Profile from './pages/Profile';
-import Admin from './pages/Admin';
-import About from './pages/About';
-import Contact from './pages/Contact';
-import FAQ from './pages/FAQ';
-import Privacy from './pages/Privacy';
-import Terms from './pages/Terms';
-import Shipping from './pages/Shipping';
-import NotFound from './pages/NotFound';
+const Categories = lazy(() => import('./pages/Categories'));
+const CategoryPage = lazy(() => import('./pages/CategoryPage'));
+const ProductDetail = lazy(() => import('./pages/ProductDetail'));
+const Login = lazy(() => import('./pages/Login'));
+const Signup = lazy(() => import('./pages/Signup'));
+const Cart = lazy(() => import('./pages/Cart'));
+const Checkout = lazy(() => import('./pages/Checkout'));
+const OrderSuccess = lazy(() => import('./pages/OrderSuccess'));
+const Orders = lazy(() => import('./pages/Orders'));
+const OrderDetail = lazy(() => import('./pages/OrderDetail'));
+const Profile = lazy(() => import('./pages/Profile'));
+const Admin = lazy(() => import('./pages/Admin'));
+const About = lazy(() => import('./pages/About'));
+const Contact = lazy(() => import('./pages/Contact'));
+const FAQ = lazy(() => import('./pages/FAQ'));
+const Privacy = lazy(() => import('./pages/Privacy'));
+const Terms = lazy(() => import('./pages/Terms'));
+const Shipping = lazy(() => import('./pages/Shipping'));
+const NotFound = lazy(() => import('./pages/NotFound'));
+
+// Restore scroll position on navigation; leave it alone when only the query string changes (filters, pagination).
+const ScrollToTop = () => {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+  }, [pathname]);
+  return null;
+};
+
+const toastBase = {
+  background: 'hsl(var(--popover))',
+  color: 'hsl(var(--popover-foreground))',
+  border: '1px solid hsl(var(--border))',
+  boxShadow: '0 4px 8px hsl(var(--shadow-color) / 0.06), 0 24px 48px -12px hsl(var(--shadow-color) / 0.24)',
+  borderRadius: '0.75rem',
+  fontSize: '0.875rem',
+  fontWeight: 500,
+  padding: '0.75rem 1rem',
+};
 
 function App() {
   return (
@@ -35,9 +56,11 @@ function App() {
       <AuthProvider>
         <CartProvider>
           <Router>
-            <div className="min-h-screen flex flex-col">
+            <ScrollToTop />
+            <div className="flex min-h-screen flex-col">
               <Header />
-              <main className="flex-1">
+              <main id="main" tabIndex={-1} className="flex-1 outline-none">
+                <Suspense fallback={<div className="flex min-h-[50vh] items-center justify-center" role="status" aria-label="Loading"><div className="h-8 w-8 animate-spin rounded-full border-2 border-muted border-t-primary" /></div>}>
                 <Routes>
                 <Route path="/" element={<Home />} />
                 <Route path="/shop" element={<Shop />} />
@@ -86,40 +109,18 @@ function App() {
                 } />
                 <Route path="*" element={<NotFound />} />
               </Routes>
+              </Suspense>
             </main>
             <Footer />
           </div>
           <Toaster
-            position="top-right"
+            position="top-center"
+            containerStyle={{ top: 56 }}
             toastOptions={{
-              duration: 4000,
-              style: {
-                background: '#FFFFFF',
-                color: '#8B4513',
-                border: '1px solid #E8DCC0',
-                fontWeight: '500',
-              },
-              success: {
-                style: {
-                  background: '#9CAF88',
-                  color: '#FFFFFF',
-                  border: '1px solid #9CAF88',
-                },
-              },
-              error: {
-                style: {
-                  background: '#DC2626',
-                  color: '#FFFFFF',
-                  border: '1px solid #DC2626',
-                },
-              },
-              loading: {
-                style: {
-                  background: '#C17B5A',
-                  color: '#FFFFFF',
-                  border: '1px solid #C17B5A',
-                },
-              },
+              duration: 3500,
+              style: toastBase,
+              success: { iconTheme: { primary: 'hsl(var(--success))', secondary: 'hsl(var(--popover))' } },
+              error: { iconTheme: { primary: 'hsl(var(--destructive))', secondary: 'hsl(var(--popover))' } },
             }}
           />
         </Router>

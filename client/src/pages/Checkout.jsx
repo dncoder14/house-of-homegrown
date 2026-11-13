@@ -1,103 +1,86 @@
 import { useState, useEffect } from 'react';
-import { Navigate, useNavigate } from 'react-router-dom';
+import { Navigate, useNavigate, Link } from 'react-router-dom';
+import { Plus, MapPin, Banknote, AlertCircle, Lock } from 'lucide-react';
 import { Button } from '../components/ui/button';
-import { Input } from '../components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { Input, Field } from '../components/ui/input';
+import { Price } from '../components/ui/price';
+import { PageHeader } from '../components/ui/page-header';
+import { Breadcrumbs } from '../components/ui/breadcrumbs';
 import { useCart } from '../context/CartContext';
 import { ordersAPI, profileAPI, getErrorMessage } from '../utils/api';
 import usePageTitle from '../hooks/usePageTitle';
-import { useTheme } from '../context/ThemeContext';
-import { Plus, MapPin } from 'lucide-react';
+
+const EMPTY_FORM = { name: '', phone: '', street: '', city: '', state: '', pincode: '' };
 
 const Checkout = () => {
-  const [formData, setFormData] = useState({
-    name: '',
-    phone: '',
-    street: '',
-    city: '',
-    state: '',
-    pincode: ''
-  });
+  const [formData, setFormData] = useState(EMPTY_FORM);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [addresses, setAddresses] = useState([]);
+  const [addressesLoaded, setAddressesLoaded] = useState(false);
   const [selectedAddress, setSelectedAddress] = useState(null);
   const [showNewAddress, setShowNewAddress] = useState(false);
   const [placed, setPlaced] = useState(false);
-  
+
   const { cart, getTotalPrice, clearCart, refreshCart } = useCart();
   const navigate = useNavigate();
-  const { isDark } = useTheme();
-
   usePageTitle('Checkout');
 
   useEffect(() => {
     refreshCart();
-    fetchAddresses();
+    profileAPI.getAddresses()
+      .then((response) => {
+        setAddresses(response.data);
+        const defaultAddress = response.data.find((addr) => addr.isDefault);
+        if (defaultAddress) setSelectedAddress(defaultAddress);
+      })
+      .catch((err) => console.error('Error fetching addresses:', err))
+      .finally(() => setAddressesLoaded(true));
   }, [refreshCart]);
 
-  const fetchAddresses = async () => {
-    try {
-      const response = await profileAPI.getAddresses();
-      setAddresses(response.data);
-      const defaultAddress = response.data.find(addr => addr.isDefault);
-      if (defaultAddress) {
-        setSelectedAddress(defaultAddress);
-      }
-    } catch (error) {
-      console.error('Error fetching addresses:', error);
-    }
-  };
+  const usingForm = addresses.length === 0 || showNewAddress;
 
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
+    setFormData({ ...formData, [e.target.name]: e.target.value });
     setError('');
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!usingForm && !selectedAddress) {
+      setError('Choose a delivery address to continue.');
+      return;
+    }
     setLoading(true);
     setError('');
 
     try {
-      let shippingAddress;
-      
-      if (selectedAddress) {
-        shippingAddress = {
-          name: selectedAddress.fullName,
-          phone: selectedAddress.phone,
-          street: `${selectedAddress.addressLine1}${selectedAddress.addressLine2 ? ', ' + selectedAddress.addressLine2 : ''}`,
-          city: selectedAddress.city,
-          state: selectedAddress.state,
-          pincode: selectedAddress.pincode
-        };
-      } else {
-        shippingAddress = formData;
-      }
+      const shippingAddress = usingForm
+        ? formData
+        : {
+            name: selectedAddress.fullName,
+            phone: selectedAddress.phone,
+            street: `${selectedAddress.addressLine1}${selectedAddress.addressLine2 ? ', ' + selectedAddress.addressLine2 : ''}`,
+            city: selectedAddress.city,
+            state: selectedAddress.state,
+            pincode: selectedAddress.pincode,
+          };
 
-      const orderData = {
-        items: cart.map(item => ({
-          productId: item.id,
-          size: item.size || undefined,
-          quantity: item.quantity
-        })),
+      const response = await ordersAPI.create({
+        items: cart.map((item) => ({ productId: item.id, size: item.size || undefined, quantity: item.quantity })),
         shippingAddress,
-        totalAmount: getTotalPrice()
-      };
-
-      const response = await ordersAPI.create(orderData);
+        totalAmount: getTotalPrice(),
+      });
       setPlaced(true);
       clearCart();
       navigate('/order-success', { state: { orderId: response.data.order._id }, replace: true });
-    } catch (error) {
-      const code = error.response?.data?.code;
+    } catch (err) {
+      const code = err.response?.data?.code;
       if (['PRICE_CHANGED', 'INSUFFICIENT_STOCK', 'ITEM_UNAVAILABLE', 'SIZE_REQUIRED'].includes(code)) {
         await refreshCart();
       }
-      setError(getErrorMessage(error, 'Failed to place order'));
+      setError(getErrorMessage(err, 'Failed to place order'));
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } finally {
       setLoading(false);
     }
@@ -107,274 +90,152 @@ const Checkout = () => {
     return <Navigate to="/cart" replace />;
   }
 
+  const total = getTotalPrice();
+
   return (
-    <div className={`min-h-screen ${isDark ? 'bg-background' : 'bg-earth-cream/30'}`}>
-      <div className="container mx-auto px-4 py-8">
-        <h1 className={`text-3xl font-bold ${isDark ? 'text-white' : 'text-earth-brown'} mb-8`}>Checkout</h1>
-        
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <div>
-            <Card className={isDark ? 'bg-black/50 border-white/10' : ''}>
-              <CardHeader>
-                <CardTitle className={isDark ? 'text-white' : 'text-earth-brown'}>Shipping Address</CardTitle>
-              </CardHeader>
-              <CardContent>
+    <div className="page-container py-8 sm:py-12">
+      <Breadcrumbs items={[{ label: 'Cart', to: '/cart' }, { label: 'Checkout' }]} className="mb-6" />
+      <PageHeader title="Checkout" />
+
+      <form onSubmit={handleSubmit} className="mt-8 grid gap-8 lg:grid-cols-[1fr_24rem] lg:items-start" noValidate={false}>
+        <div className="space-y-6">
+          {error && (
+            <div role="alert" className="flex items-start gap-3 rounded-xl border border-destructive/30 bg-destructive-soft p-4 text-sm text-destructive">
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+              <p>{error}</p>
+            </div>
+          )}
+
+          <section className="rounded-xl border border-border bg-card p-5 shadow-soft sm:p-6" aria-labelledby="delivery-heading">
+            <h2 id="delivery-heading" className="font-sans text-lg font-semibold tracking-normal">Delivery address</h2>
+
+            {!addressesLoaded ? (
+              <div className="mt-5 h-24 skeleton" aria-hidden="true" />
+            ) : (
+              <>
                 {addresses.length > 0 && (
-                  <div className="mb-6">
-                    <h3 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-earth-brown'} mb-4`}>Select Saved Address</h3>
-                    <div className="space-y-3">
-                      {addresses.map((address) => (
-                        <div
+                  <div className="mt-5 grid gap-3 sm:grid-cols-2" role="radiogroup" aria-labelledby="delivery-heading">
+                    {addresses.map((address) => {
+                      const selected = !showNewAddress && selectedAddress?._id === address._id;
+                      return (
+                        <button
                           key={address._id}
-                          className={`p-4 rounded-lg border cursor-pointer transition-all ${
-                            selectedAddress?._id === address._id
-                              ? 'border-earth-terracotta bg-earth-terracotta/10'
-                              : isDark
-                              ? 'border-white/20 bg-white/5 hover:bg-white/10'
-                              : 'border-earth-beige bg-earth-cream/20 hover:bg-earth-cream/40'
+                          type="button"
+                          role="radio"
+                          aria-checked={selected}
+                          onClick={() => { setSelectedAddress(address); setShowNewAddress(false); setError(''); }}
+                          className={`relative rounded-xl border p-4 text-left text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-card ${
+                            selected ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'border-border hover:border-primary/40 hover:bg-muted/60'
                           }`}
-                          onClick={() => {
-                            setSelectedAddress(address);
-                            setShowNewAddress(false);
-                          }}
                         >
-                          <div className="flex items-center justify-between mb-2">
-                            <span className={`font-semibold ${isDark ? 'text-white' : 'text-earth-brown'} capitalize`}>
-                              <MapPin className="h-4 w-4 inline mr-1" />
-                              {address.type} {address.isDefault && '(Default)'}
-                            </span>
-                            <div className={`w-4 h-4 rounded-full border-2 ${
-                              selectedAddress?._id === address._id
-                                ? 'bg-earth-terracotta border-earth-terracotta'
-                                : isDark
-                                ? 'border-white/40'
-                                : 'border-earth-brown/40'
-                            }`}></div>
-                          </div>
-                          <p className={`text-sm ${isDark ? 'text-white/80' : 'text-earth-brown/80'} mb-1`}>
-                            {address.fullName} • {address.phone}
-                          </p>
-                          <p className={`text-sm ${isDark ? 'text-white/70' : 'text-earth-brown/70'}`}>
+                          <span className="mb-2 flex items-center gap-2 font-semibold capitalize">
+                            <MapPin className="h-4 w-4 text-primary" aria-hidden="true" />
+                            {address.type || 'Address'}
+                            {address.isDefault && <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium normal-case text-muted-foreground">Default</span>}
+                          </span>
+                          <span className="block font-medium">{address.fullName}</span>
+                          <span className="num block text-muted-foreground">{address.phone}</span>
+                          <span className="mt-1 block text-muted-foreground">
                             {address.addressLine1}{address.addressLine2 && `, ${address.addressLine2}`}
-                          </p>
-                          <p className={`text-sm ${isDark ? 'text-white/70' : 'text-earth-brown/70'}`}>
-                            {address.city}, {address.state} {address.pincode}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                    
-                    <Button
+                          </span>
+                          <span className="block text-muted-foreground">{address.city}, {address.state} {address.pincode}</span>
+                        </button>
+                      );
+                    })}
+                    <button
                       type="button"
-                      variant="outline"
-                      className="w-full mt-4"
-                      onClick={() => {
-                        setShowNewAddress(true);
-                        setSelectedAddress(null);
-                      }}
+                      onClick={() => { setShowNewAddress(true); setSelectedAddress(null); }}
+                      aria-pressed={showNewAddress}
+                      className={`flex min-h-[7rem] flex-col items-center justify-center gap-2 rounded-xl border border-dashed text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                        showNewAddress ? 'border-primary bg-primary/5 text-primary' : 'border-input text-muted-foreground hover:border-primary/40 hover:text-foreground'
+                      }`}
                     >
-                      <Plus className="h-4 w-4 mr-2" />
-                      Use New Address
-                    </Button>
+                      <Plus className="h-5 w-5" aria-hidden="true" />
+                      Use a new address
+                    </button>
                   </div>
                 )}
-                
-                {(addresses.length === 0 || showNewAddress) && (
-                  <form onSubmit={handleSubmit} className="space-y-4">
-                    {error && (
-                      <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-md text-sm">
-                        {error}
-                      </div>
-                    )}
-                    
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                        <label htmlFor="name" className={`block text-sm font-medium ${isDark ? 'text-white' : 'text-earth-brown'} mb-1`}>
-                          Full Name *
-                        </label>
-                        <Input
-                          id="name"
-                          name="name"
-                          type="text"
-                          required
-                          value={formData.name}
-                          onChange={handleChange}
-                          placeholder="Enter full name"
-                          className={isDark ? 'bg-white/10 border-white/20 text-white placeholder:text-white/50' : ''}
-                        />
-                      </div>
-                      
-                      <div>
-                        <label htmlFor="phone" className={`block text-sm font-medium ${isDark ? 'text-white' : 'text-earth-brown'} mb-1`}>
-                          Phone Number *
-                        </label>
-                        <Input
-                          id="phone"
-                          name="phone"
-                          type="tel"
-                          required
-                          value={formData.phone}
-                          onChange={handleChange}
-                          placeholder="Enter phone number"
-                          className={isDark ? 'bg-white/10 border-white/20 text-white placeholder:text-white/50' : ''}
-                        />
-                      </div>
-                    </div>
-                    
-                    <div>
-                      <label htmlFor="street" className={`block text-sm font-medium ${isDark ? 'text-white' : 'text-earth-brown'} mb-1`}>
-                        Street Address *
-                      </label>
-                      <Input
-                        id="street"
-                        name="street"
-                        type="text"
-                        required
-                        value={formData.street}
-                        onChange={handleChange}
-                        placeholder="Enter street address"
-                        className={isDark ? 'bg-white/10 border-white/20 text-white placeholder:text-white/50' : ''}
-                      />
-                    </div>
-                    
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                      <div>
-                        <label htmlFor="city" className={`block text-sm font-medium ${isDark ? 'text-white' : 'text-earth-brown'} mb-1`}>
-                          City *
-                        </label>
-                        <Input
-                          id="city"
-                          name="city"
-                          type="text"
-                          required
-                          value={formData.city}
-                          onChange={handleChange}
-                          placeholder="Enter city"
-                          className={isDark ? 'bg-white/10 border-white/20 text-white placeholder:text-white/50' : ''}
-                        />
-                      </div>
-                      
-                      <div>
-                        <label htmlFor="state" className={`block text-sm font-medium ${isDark ? 'text-white' : 'text-earth-brown'} mb-1`}>
-                          State *
-                        </label>
-                        <Input
-                          id="state"
-                          name="state"
-                          type="text"
-                          required
-                          value={formData.state}
-                          onChange={handleChange}
-                          placeholder="Enter state"
-                          className={isDark ? 'bg-white/10 border-white/20 text-white placeholder:text-white/50' : ''}
-                        />
-                      </div>
-                      
-                      <div>
-                        <label htmlFor="pincode" className={`block text-sm font-medium ${isDark ? 'text-white' : 'text-earth-brown'} mb-1`}>
-                          Pincode *
-                        </label>
-                        <Input
-                          id="pincode"
-                          name="pincode"
-                          type="text"
-                          required
-                          value={formData.pincode}
-                          onChange={handleChange}
-                          placeholder="Enter pincode"
-                          className={isDark ? 'bg-white/10 border-white/20 text-white placeholder:text-white/50' : ''}
-                        />
-                      </div>
-                    </div>
-                    
-                    <div className="pt-4">
-                      <h3 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-earth-brown'} mb-2`}>Payment Method</h3>
-                      <div className={`${isDark ? 'bg-white/10' : 'bg-earth-cream/50'} p-4 rounded-lg`}>
-                        <div className="flex items-center space-x-2">
-                          <input type="radio" id="cod" name="payment" value="cod" checked readOnly />
-                          <label htmlFor="cod" className={isDark ? 'text-white' : 'text-earth-brown'}>Cash on Delivery (COD)</label>
-                        </div>
-                        <p className={`text-sm ${isDark ? 'text-white/70' : 'text-earth-brown/70'} mt-1`}>Pay when your order is delivered</p>
-                      </div>
-                    </div>
-                    
-                    <Button
-                      type="submit"
-                      className="w-full"
-                      size="lg"
-                      disabled={loading}
-                    >
-                      {loading ? 'Placing Order...' : 'Place Order'}
-                    </Button>
-                  </form>
-                )}
-                
-                {selectedAddress && !showNewAddress && (
-                  <div className="space-y-4">
-                    <div className="pt-4">
-                      <h3 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-earth-brown'} mb-2`}>Payment Method</h3>
-                      <div className={`${isDark ? 'bg-white/10' : 'bg-earth-cream/50'} p-4 rounded-lg`}>
-                        <div className="flex items-center space-x-2">
-                          <input type="radio" id="cod" name="payment" value="cod" checked readOnly />
-                          <label htmlFor="cod" className={isDark ? 'text-white' : 'text-earth-brown'}>Cash on Delivery (COD)</label>
-                        </div>
-                        <p className={`text-sm ${isDark ? 'text-white/70' : 'text-earth-brown/70'} mt-1`}>Pay when your order is delivered</p>
-                      </div>
-                    </div>
-                    
-                    <Button
-                      onClick={handleSubmit}
-                      className="w-full"
-                      size="lg"
-                      disabled={loading}
-                    >
-                      {loading ? 'Placing Order...' : 'Place Order'}
-                    </Button>
+
+                {usingForm && (
+                  <div className={`grid gap-4 sm:grid-cols-6 ${addresses.length > 0 ? 'mt-6 border-t border-border pt-6' : 'mt-5'}`}>
+                    <Field label="Full name" htmlFor="name" required className="sm:col-span-3">
+                      <Input id="name" name="name" autoComplete="name" required value={formData.name} onChange={handleChange} />
+                    </Field>
+                    <Field label="Phone number" htmlFor="phone" required className="sm:col-span-3">
+                      <Input id="phone" name="phone" type="tel" inputMode="tel" autoComplete="tel" required value={formData.phone} onChange={handleChange} />
+                    </Field>
+                    <Field label="Street address" htmlFor="street" required className="sm:col-span-6">
+                      <Input id="street" name="street" autoComplete="street-address" required value={formData.street} onChange={handleChange} />
+                    </Field>
+                    <Field label="City" htmlFor="city" required className="sm:col-span-2">
+                      <Input id="city" name="city" autoComplete="address-level2" required value={formData.city} onChange={handleChange} />
+                    </Field>
+                    <Field label="State" htmlFor="state" required className="sm:col-span-2">
+                      <Input id="state" name="state" autoComplete="address-level1" required value={formData.state} onChange={handleChange} />
+                    </Field>
+                    <Field label="Pincode" htmlFor="pincode" required className="sm:col-span-2">
+                      <Input id="pincode" name="pincode" inputMode="numeric" autoComplete="postal-code" required value={formData.pincode} onChange={handleChange} className="num" />
+                    </Field>
                   </div>
                 )}
-              </CardContent>
-            </Card>
-          </div>
-          
-          <div>
-            <Card className={`sticky top-24 ${isDark ? 'bg-black/50 border-white/10' : ''}`}>
-              <CardHeader>
-                <CardTitle className={isDark ? 'text-white' : 'text-earth-brown'}>Order Summary</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-3">
-                  {cart.map((item) => (
-                    <div key={item.key} className="flex justify-between items-center">
-                      <div className="flex-1">
-                        <p className={`font-medium text-sm ${isDark ? 'text-white' : ''}`}>{item.title}</p>
-                        <p className={`text-xs ${isDark ? 'text-white/70' : 'text-earth-brown/70'}`}>{item.size ? `Size: ${item.size} • ` : ''}Qty: {item.quantity}</p>
-                      </div>
-                      <span className={`font-medium ${isDark ? 'text-white' : ''}`}>₹{(item.price * item.quantity).toLocaleString()}</span>
-                    </div>
-                  ))}
-                </div>
-                
-                <div className={`border-t ${isDark ? 'border-white/10' : ''} pt-4 space-y-2`}>
-                  <div className={`flex justify-between ${isDark ? 'text-white' : ''}`}>
-                    <span>Subtotal</span>
-                    <span>₹{getTotalPrice().toLocaleString()}</span>
-                  </div>
-                  
-                  <div className={`flex justify-between ${isDark ? 'text-white' : ''}`}>
-                    <span>Shipping</span>
-                    <span className="text-green-600">Free</span>
-                  </div>
-                  
-                  <div className={`flex justify-between text-lg font-bold pt-2 border-t ${isDark ? 'border-white/10 text-white' : ''}`}>
-                    <span>Total</span>
-                    <span className="text-earth-terracotta">₹{getTotalPrice().toLocaleString()}</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+              </>
+            )}
+          </section>
+
+          <section className="rounded-xl border border-border bg-card p-5 shadow-soft sm:p-6" aria-labelledby="payment-heading">
+            <h2 id="payment-heading" className="font-sans text-lg font-semibold tracking-normal">Payment</h2>
+            <div className="mt-5 flex items-start gap-3 rounded-xl border border-primary bg-primary/5 p-4 ring-1 ring-primary">
+              <Banknote className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
+              <div className="text-sm">
+                <p className="font-semibold">Cash on delivery</p>
+                <p className="mt-0.5 text-muted-foreground">Pay when your order arrives. No advance payment needed.</p>
+              </div>
+            </div>
+          </section>
         </div>
-      </div>
+
+        <aside className="rounded-xl border border-border bg-card p-5 shadow-soft sm:p-6 lg:sticky lg:top-24" aria-label="Order summary">
+          <h2 className="font-sans text-lg font-semibold tracking-normal">Order summary</h2>
+          <ul className="mt-5 divide-y divide-border">
+            {cart.map((item) => (
+              <li key={item.key} className="flex gap-3 py-3 first:pt-0">
+                <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-muted">
+                  <img src={item.imageUrl} alt="" className="h-full w-full object-cover" />
+                  <span className="num absolute right-0.5 top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-foreground px-1 text-[0.6875rem] font-bold text-background">{item.quantity}</span>
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="line-clamp-2 text-sm font-medium leading-snug">{item.title}</p>
+                  {item.size && <p className="text-xs text-muted-foreground">Size {item.size}</p>}
+                </div>
+                <Price value={item.price * item.quantity} className="text-sm" />
+              </li>
+            ))}
+          </ul>
+
+          <dl className="mt-2 space-y-3 border-t border-border pt-4 text-sm">
+            <div className="flex justify-between">
+              <dt className="text-muted-foreground">Subtotal</dt>
+              <dd><Price value={total} className="font-medium" /></dd>
+            </div>
+            <div className="flex justify-between">
+              <dt className="text-muted-foreground">Shipping</dt>
+              <dd className="font-medium text-success">Free</dd>
+            </div>
+            <div className="flex items-baseline justify-between border-t border-border pt-4">
+              <dt className="text-base font-semibold">Total</dt>
+              <dd><Price value={total} className="text-2xl" /></dd>
+            </div>
+          </dl>
+
+          <Button type="submit" size="lg" className="mt-6 w-full" loading={loading}>
+            {loading ? 'Placing order…' : 'Place order'}
+          </Button>
+          <p className="mt-3 flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
+            <Lock className="h-3 w-3 shrink-0" aria-hidden="true" />
+            <span>By placing your order you agree to our <Link to="/terms" className="underline underline-offset-2 hover:text-foreground">terms</Link>.</span>
+          </p>
+        </aside>
+      </form>
     </div>
   );
 };

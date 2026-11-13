@@ -158,7 +158,7 @@ export const CartProvider = ({ children }) => {
     }
 
     setCart(next);
-    notices.forEach((message) => toast(message, { icon: 'ℹ️', duration: 6000 }));
+    notices.forEach((message) => toast(message, { duration: 6000 }));
     return notices;
   }, []);
 

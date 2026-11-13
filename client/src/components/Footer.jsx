@@ -1,52 +1,100 @@
 import { Link } from 'react-router-dom';
-import { useTheme } from '../context/ThemeContext';
+import { Truck, RotateCcw, Banknote, Hand } from 'lucide-react';
 
-const Footer = () => {
-  const { isDark } = useTheme();
-  
-  return (
-    <footer className={`${isDark ? 'bg-background text-foreground border-t border-border' : 'bg-earth-brown text-earth-cream'}`}>
-      <div className="container mx-auto px-4 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-          <div className="col-span-1 md:col-span-2">
-            <Link to="/" className="flex items-center space-x-2 mb-4">
-              <img src="/logo.png" alt="House of Homegrown" className="w-8 h-8" />
-              <span className="text-xl font-bold">House of Homegrown</span>
-            </Link>
-            <p className="text-white/70 mb-4 max-w-md">
-              Celebrating India's rich heritage through sustainable, premium products crafted by local artisans. 
-              Every purchase supports traditional craftsmanship and sustainable practices.
-            </p>
-          </div>
+const TRUST = [
+  { icon: Truck, title: 'Free shipping', text: 'Across India, no minimum' },
+  { icon: Banknote, title: 'Cash on delivery', text: 'Pay when it arrives' },
+  { icon: RotateCcw, title: '14-day returns', text: 'On unused items' },
+  { icon: Hand, title: 'Made by artisans', text: 'Small-batch, traditional' },
+];
 
-          <div>
-            <h3 className="font-semibold mb-4">Quick Links</h3>
-            <ul className="space-y-2">
-              <li><Link to="/shop" className={`${isDark ? 'text-muted-foreground hover:text-foreground' : 'text-earth-cream/80 hover:text-earth-cream'} transition-colors`}>Shop</Link></li>
-              <li><Link to="/about" className={`${isDark ? 'text-muted-foreground hover:text-foreground' : 'text-earth-cream/80 hover:text-earth-cream'} transition-colors`}>About Us</Link></li>
-              <li><Link to="/contact" className={`${isDark ? 'text-muted-foreground hover:text-foreground' : 'text-earth-cream/80 hover:text-earth-cream'} transition-colors`}>Contact</Link></li>
-              <li><Link to="/faq" className={`${isDark ? 'text-muted-foreground hover:text-foreground' : 'text-earth-cream/80 hover:text-earth-cream'} transition-colors`}>FAQ</Link></li>
-            </ul>
-          </div>
+const COLUMNS = [
+  {
+    title: 'Shop',
+    links: [
+      { to: '/shop', label: 'All products' },
+      { to: '/categories', label: 'Categories' },
+      { to: '/category/clothing', label: 'Clothing' },
+      { to: '/category/indian-taste', label: 'Indian Taste' },
+    ],
+  },
+  {
+    title: 'Help',
+    links: [
+      { to: '/orders', label: 'Track an order' },
+      { to: '/faq', label: 'FAQ' },
+      { to: '/contact', label: 'Contact us' },
+      { to: '/shipping', label: 'Shipping & returns' },
+    ],
+  },
+  {
+    title: 'Company',
+    links: [
+      { to: '/about', label: 'Our story' },
+      { to: '/privacy', label: 'Privacy policy' },
+      { to: '/terms', label: 'Terms & conditions' },
+    ],
+  },
+];
 
-          <div>
-            <h3 className="font-semibold mb-4">Policies</h3>
-            <ul className="space-y-2">
-              <li><Link to="/shipping" className={`${isDark ? 'text-muted-foreground hover:text-foreground' : 'text-earth-cream/80 hover:text-earth-cream'} transition-colors`}>Shipping & Returns</Link></li>
-              <li><Link to="/privacy" className={`${isDark ? 'text-muted-foreground hover:text-foreground' : 'text-earth-cream/80 hover:text-earth-cream'} transition-colors`}>Privacy Policy</Link></li>
-              <li><Link to="/terms" className={`${isDark ? 'text-muted-foreground hover:text-foreground' : 'text-earth-cream/80 hover:text-earth-cream'} transition-colors`}>Terms & Conditions</Link></li>
-            </ul>
-          </div>
-        </div>
+const linkClass = 'rounded-sm text-sm text-muted-foreground transition-colors hover:text-foreground';
 
-        <div className={`border-t ${isDark ? 'border-border' : 'border-earth-cream/20'} mt-8 pt-8 text-center`}>
-          <p className={`${isDark ? 'text-muted-foreground' : 'text-earth-cream/60'}`}>
-            © 2026 House of Homegrown. All rights reserved. Made for sustainable living.
+const Footer = () => (
+  <footer className="mt-24 border-t border-border bg-surface">
+    <div className="page-container">
+      <ul className="grid grid-cols-2 gap-x-6 gap-y-8 border-b border-border py-10 lg:grid-cols-4">
+        {TRUST.map(({ icon: Icon, title, text }) => (
+          <li key={title} className="flex items-start gap-3">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent text-accent-foreground">
+              <Icon className="h-[1.125rem] w-[1.125rem]" aria-hidden="true" />
+            </span>
+            <div>
+              <p className="text-sm font-semibold">{title}</p>
+              <p className="text-[0.8125rem] text-muted-foreground">{text}</p>
+            </div>
+          </li>
+        ))}
+      </ul>
+
+      <div className="grid gap-10 py-12 lg:grid-cols-[1.4fr_2fr]">
+        <div>
+          <Link to="/" className="inline-flex items-center gap-2.5" aria-label="House of Homegrown home">
+            <img src="/logo.png" alt="" className="h-9 w-9 rounded-md" />
+            <span className="font-display text-xl">House of Homegrown</span>
+          </Link>
+          <p className="mt-4 max-w-sm text-sm leading-relaxed text-muted-foreground">
+            Celebrating India's heritage through sustainable, premium products crafted by local artisans.
+            Every purchase supports traditional craftsmanship.
           </p>
+          <div className="mt-6 flex items-center gap-3" aria-hidden="true">
+            <img src="/pattern1.png" alt="" className="h-8 w-8 opacity-80" />
+            <img src="/pattern2.png" alt="" className="h-8 w-8 opacity-80" />
+            <img src="/pattern3.png" alt="" className="h-8 w-8 opacity-80" />
+          </div>
         </div>
+
+        <nav aria-label="Footer" className="grid grid-cols-2 gap-8 sm:grid-cols-3">
+          {COLUMNS.map((column) => (
+            <div key={column.title}>
+              <h2 className="mb-4 font-sans text-sm font-semibold tracking-normal">{column.title}</h2>
+              <ul className="space-y-2.5">
+                {column.links.map((link) => (
+                  <li key={link.to}>
+                    <Link to={link.to} className={linkClass}>{link.label}</Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </nav>
       </div>
-    </footer>
-  );
-};
+
+      <div className="flex flex-col gap-2 border-t border-border py-6 text-[0.8125rem] text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+        <p>© {new Date().getFullYear()} House of Homegrown. All rights reserved.</p>
+        <p>Made for sustainable living.</p>
+      </div>
+    </div>
+  </footer>
+);
 
 export default Footer;

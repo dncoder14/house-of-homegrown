@@ -1,55 +1,31 @@
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import ContentPage from '../components/ContentPage';
 import usePageTitle from '../hooks/usePageTitle';
 
+const SECTIONS = [
+  ['Acceptance of terms', 'By accessing and using this website, you accept and agree to be bound by the terms and provision of this agreement.'],
+  ['Use license', "Permission is granted to temporarily download one copy of the materials on House of Homegrown's website for personal, non-commercial transitory viewing only."],
+  ['Product information', 'We strive to provide accurate product information, but we do not warrant that product descriptions or other content is accurate, complete, reliable, current, or error-free.'],
+  ['Orders and payment', 'All orders are subject to acceptance and availability. We reserve the right to refuse or cancel any order for any reason.'],
+  ['Limitation of liability', 'House of Homegrown shall not be liable for any damages arising from the use or inability to use our products or services.'],
+];
+
 const Terms = () => {
-  usePageTitle('Terms & Conditions');
-
+  usePageTitle('Terms & conditions');
   return (
-    <div className="min-h-screen bg-earth-cream/30">
-      <div className="container mx-auto px-4 py-12">
-        <div className="max-w-4xl mx-auto">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-3xl text-earth-brown">Terms & Conditions</CardTitle>
-              <p className="text-earth-brown/70">Last updated: December 2024</p>
-            </CardHeader>
-            <CardContent className="prose prose-lg max-w-none">
-              <div className="space-y-6 text-earth-brown/80">
-                <section>
-                  <h2 className="text-xl font-semibold text-earth-brown mb-3">Acceptance of Terms</h2>
-                  <p>By accessing and using this website, you accept and agree to be bound by the terms and provision of this agreement.</p>
-                </section>
-
-                <section>
-                  <h2 className="text-xl font-semibold text-earth-brown mb-3">Use License</h2>
-                  <p>Permission is granted to temporarily download one copy of the materials on House of Homegrown's website for personal, non-commercial transitory viewing only.</p>
-                </section>
-
-                <section>
-                  <h2 className="text-xl font-semibold text-earth-brown mb-3">Product Information</h2>
-                  <p>We strive to provide accurate product information, but we do not warrant that product descriptions or other content is accurate, complete, reliable, current, or error-free.</p>
-                </section>
-
-                <section>
-                  <h2 className="text-xl font-semibold text-earth-brown mb-3">Orders and Payment</h2>
-                  <p>All orders are subject to acceptance and availability. We reserve the right to refuse or cancel any order for any reason.</p>
-                </section>
-
-                <section>
-                  <h2 className="text-xl font-semibold text-earth-brown mb-3">Limitation of Liability</h2>
-                  <p>House of Homegrown shall not be liable for any damages arising from the use or inability to use our products or services.</p>
-                </section>
-
-                <section>
-                  <h2 className="text-xl font-semibold text-earth-brown mb-3">Contact Information</h2>
-                  <p>For questions about these Terms & Conditions, please contact us at hello@houseofhomegrown.com</p>
-                </section>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+    <ContentPage title="Terms & conditions" description="Last updated: December 2024" width="max-w-3xl">
+      <div className="prose-copy">
+        {SECTIONS.map(([heading, body]) => (
+          <section key={heading}>
+            <h2>{heading}</h2>
+            <p>{body}</p>
+          </section>
+        ))}
+        <section>
+          <h2>Contact information</h2>
+          <p>For questions about these Terms & Conditions, please contact us at <a href="mailto:hello@houseofhomegrown.com">hello@houseofhomegrown.com</a>.</p>
+        </section>
       </div>
-    </div>
+    </ContentPage>
   );
 };
 

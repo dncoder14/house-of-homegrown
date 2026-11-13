@@ -1,315 +1,247 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Package, MapPin, CreditCard, Calendar, RotateCcw, Truck } from 'lucide-react';
+import { MapPin, Check, RotateCcw, XCircle, CloudOff } from 'lucide-react';
 import { Button } from '../components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import { Badge } from '../components/ui/badge';
+import { Skeleton } from '../components/ui/skeleton';
+import { Price } from '../components/ui/price';
+import { StatusBadge } from '../components/ui/status-badge';
+import { Breadcrumbs } from '../components/ui/breadcrumbs';
+import { EmptyState } from '../components/ui/empty-state';
+import { ConfirmDialog } from '../components/ui/confirm-dialog';
 import { ordersAPI, getErrorMessage } from '../utils/api';
 import usePageTitle from '../hooks/usePageTitle';
-import { useTheme } from '../context/ThemeContext';
 import toast from 'react-hot-toast';
+
+const STEPS = ['Placed', 'Processing', 'Shipped', 'Delivered'];
+const RETURN_WINDOW_DAYS = 14;
+
+const formatDate = (value) =>
+  new Date(value).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
+
+const isReturnEligible = (orderDate, status) => {
+  if (status !== 'Delivered') return false;
+  const days = Math.ceil(Math.abs(Date.now() - new Date(orderDate)) / (1000 * 60 * 60 * 24));
+  return days <= RETURN_WINDOW_DAYS;
+};
+
+const Tracker = ({ status }) => {
+  const current = STEPS.indexOf(status);
+  return (
+    <ol className="flex" aria-label="Order progress">
+      {STEPS.map((label, index) => {
+        const done = index <= current;
+        const active = index === current;
+        return (
+          <li key={label} className="relative flex flex-1 flex-col items-center text-center" aria-current={active ? 'step' : undefined}>
+            {index > 0 && (
+              <span
+                aria-hidden="true"
+                className={`absolute right-1/2 top-4 h-0.5 w-full -translate-y-1/2 ${index <= current ? 'bg-success' : 'bg-border'}`}
+              />
+            )}
+            <span
+              className={`num relative z-10 flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold ring-4 ring-card ${
+                done ? 'bg-success text-background' : 'bg-muted text-muted-foreground'
+              }`}
+            >
+              {done ? <Check className="h-4 w-4" aria-hidden="true" /> : index + 1}
+            </span>
+            <span className={`mt-2 text-xs sm:text-sm ${done ? 'font-semibold text-foreground' : 'text-muted-foreground'}`}>{label}</span>
+          </li>
+        );
+      })}
+    </ol>
+  );
+};
 
 const OrderDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const [cancelling, setCancelling] = useState(false);
-  const { isDark } = useTheme();
-
-  useEffect(() => {
-    fetchOrder();
-  }, [id]);
-
-  const fetchOrder = async () => {
-    try {
-      const response = await ordersAPI.getById(id);
-      setOrder(response.data);
-    } catch (error) {
-      console.error('Error fetching order:', error);
-      navigate('/orders');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'Placed': return 'bg-blue-100 text-blue-800';
-      case 'Processing': return 'bg-yellow-100 text-yellow-800';
-      case 'Shipped': return 'bg-purple-100 text-purple-800';
-      case 'Delivered': return 'bg-green-100 text-green-800';
-      case 'Cancelled': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
-
   usePageTitle('Order details');
 
-  const canCancel = order && ['Placed', 'Processing'].includes(order.status);
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setError(false);
+    ordersAPI.getById(id)
+      .then((response) => { if (!cancelled) setOrder(response.data); })
+      .catch((err) => {
+        console.error('Error fetching order:', err);
+        if (cancelled) return;
+        if (err.response?.status === 404) navigate('/orders', { replace: true });
+        else setError(true);
+      })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [id, navigate]);
 
   const handleCancel = async () => {
-    if (!window.confirm('Cancel this order? This cannot be undone.')) return;
     setCancelling(true);
     try {
       const response = await ordersAPI.cancel(order._id);
       setOrder(response.data);
+      setConfirmOpen(false);
       toast.success('Order cancelled');
-    } catch (error) {
-      toast.error(getErrorMessage(error, 'Could not cancel order'));
+    } catch (err) {
+      toast.error(getErrorMessage(err, 'Could not cancel order'));
     } finally {
       setCancelling(false);
     }
-  };
-
-  const isReturnEligible = (orderDate, status) => {
-    if (status !== 'Delivered') return false;
-    const returnPolicyDays = 14;
-    const orderDateTime = new Date(orderDate);
-    const currentTime = new Date();
-    const diffTime = Math.abs(currentTime - orderDateTime);
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays <= returnPolicyDays;
   };
 
   const handleReturn = () => {
     toast(`To start a return, email hello@houseofhomegrown.com with order ID ${order._id.slice(-8)}.`, { duration: 8000 });
   };
 
-  const getTrackingSteps = (status) => {
-    const steps = [
-      { label: 'Order Placed', status: 'completed' },
-      { label: 'Processing', status: status === 'Placed' ? 'pending' : 'completed' },
-      { label: 'Shipped', status: ['Placed', 'Processing'].includes(status) ? 'pending' : 'completed' },
-      { label: 'Delivered', status: status === 'Delivered' ? 'completed' : 'pending' }
-    ];
-    return steps;
-  };
-
   if (loading) {
     return (
-      <div className={`min-h-screen ${isDark ? 'bg-background' : 'bg-earth-cream/30'} flex items-center justify-center`}>
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-earth-terracotta"></div>
-      </div>
-    );
-  }
-
-  if (!order) {
-    return (
-      <div className={`min-h-screen ${isDark ? 'bg-background' : 'bg-earth-cream/30'} flex items-center justify-center`}>
-        <div className="text-center">
-          <h2 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-earth-brown'} mb-4`}>Order not found</h2>
-          <Button onClick={() => navigate('/orders')}>Back to Orders</Button>
+      <div className="page-container py-8 sm:py-12" role="status" aria-label="Loading order">
+        <Skeleton className="mb-6 h-4 w-48" />
+        <Skeleton className="h-10 w-72" />
+        <Skeleton className="mt-8 h-32 w-full rounded-xl" />
+        <div className="mt-6 grid gap-6 lg:grid-cols-[1.4fr_1fr]">
+          <Skeleton className="h-64 rounded-xl" />
+          <Skeleton className="h-64 rounded-xl" />
         </div>
       </div>
     );
   }
+
+  if (error || !order) {
+    return (
+      <EmptyState
+        className="py-24"
+        icon={CloudOff}
+        title="We couldn't load this order"
+        description="Check your connection and try again."
+        action={<Button onClick={() => navigate(0)}>Reload</Button>}
+      />
+    );
+  }
+
+  const canCancel = ['Placed', 'Processing'].includes(order.status);
+  const returnable = isReturnEligible(order.createdAt, order.status);
+  const cancelled = order.status === 'Cancelled';
+  const address = order.shippingAddress;
 
   return (
-    <div className={`min-h-screen ${isDark ? 'bg-background' : 'bg-earth-cream/30'}`}>
-      <div className="container mx-auto px-4 py-8">
-        <Button
-          variant="ghost"
-          onClick={() => navigate('/orders')}
-          className={`mb-6 ${isDark ? 'text-white/80 hover:text-white hover:bg-white/10' : ''}`}
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Orders
-        </Button>
+    <div className="page-container py-8 sm:py-12">
+      <Breadcrumbs
+        className="mb-6"
+        items={[{ label: 'Orders', to: '/orders' }, { label: `Order #${order._id.slice(-8).toUpperCase()}` }]}
+      />
 
-        <div className="max-w-4xl mx-auto space-y-6">
-          <Card className={isDark ? 'bg-black/50 border-white/10' : ''}>
-            <CardHeader>
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div>
-                  <CardTitle className={`text-2xl ${isDark ? 'text-white' : 'text-earth-brown'}`}>
-                    Order #{order._id.slice(-8)}
-                  </CardTitle>
-                  <div className={`flex items-center space-x-4 text-sm ${isDark ? 'text-white/70' : 'text-earth-brown/70'} mt-2`}>
-                    <div className="flex items-center space-x-1">
-                      <Calendar className="h-4 w-4" />
-                      <span>Placed on {new Date(order.createdAt).toLocaleDateString()}</span>
-                    </div>
-                    <div className="flex items-center space-x-1">
-                      <CreditCard className="h-4 w-4" />
-                      <span>{order.paymentMethod}</span>
-                    </div>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-4">
-                  <Badge className={getStatusColor(order.status)}>
-                    {order.status}
-                  </Badge>
-                  <span className="text-2xl font-bold text-earth-terracotta">
-                    ₹{order.totalAmount.toLocaleString()}
-                  </span>
-                  {canCancel && (
-                    <Button variant="outline" size="sm" onClick={handleCancel} disabled={cancelling} className="whitespace-nowrap text-red-600">
-                      {cancelling ? 'Cancelling...' : 'Cancel Order'}
-                    </Button>
-                  )}
-                  {isReturnEligible(order.createdAt, order.status) && (
-                    <Button variant="outline" size="sm" onClick={handleReturn} className="whitespace-nowrap">
-                      <RotateCcw className="h-4 w-4 mr-2" />
-                      Return Order
-                    </Button>
-                  )}
-                </div>
-              </div>
-            </CardHeader>
-          </Card>
-
-          {/* Order Tracking */}
-          <Card className={isDark ? 'bg-black/50 border-white/10' : ''}>
-            <CardHeader>
-              <CardTitle className={`${isDark ? 'text-white' : 'text-earth-brown'} flex items-center`}>
-                <Truck className="h-5 w-5 mr-2" />
-                Order Tracking
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center justify-between">
-                {getTrackingSteps(order.status).map((step, index) => (
-                  <div key={index} className="flex flex-col items-center flex-1">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                      step.status === 'completed' 
-                        ? 'bg-green-500 text-white' 
-                        : isDark 
-                        ? 'bg-white/20 text-white/60' 
-                        : 'bg-gray-200 text-gray-500'
-                    }`}>
-                      {step.status === 'completed' ? '✓' : index + 1}
-                    </div>
-                    <span className={`text-xs mt-2 text-center ${
-                      step.status === 'completed' 
-                        ? 'text-green-600 font-medium' 
-                        : isDark 
-                        ? 'text-white/60' 
-                        : 'text-gray-500'
-                    }`}>
-                      {step.label}
-                    </span>
-                    {index < getTrackingSteps(order.status).length - 1 && (
-                      <div className={`absolute h-0.5 w-full top-4 left-1/2 -z-10 ${
-                        getTrackingSteps(order.status)[index + 1].status === 'completed'
-                          ? 'bg-green-500'
-                          : isDark
-                          ? 'bg-white/20'
-                          : 'bg-gray-200'
-                      }`} style={{ transform: 'translateX(50%)' }} />
-                    )}
-                  </div>
-                ))}
-              </div>
-              {isReturnEligible(order.createdAt, order.status) && (
-                <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
-                  <p className="text-sm text-green-700">
-                    ✓ This order is eligible for return within 14 days of delivery.
-                  </p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card className={isDark ? 'bg-black/50 border-white/10' : ''}>
-              <CardHeader>
-                <CardTitle className={`${isDark ? 'text-white' : 'text-earth-brown'} flex items-center`}>
-                  <Package className="h-5 w-5 mr-2" />
-                  Order Items ({order.items.length})
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {order.items.map((item, index) => (
-                  <div key={index} className={`flex items-center space-x-4 p-4 ${isDark ? 'bg-white/5' : 'bg-earth-cream/30'} rounded-lg`}>
-                    <div className={`w-16 h-16 ${isDark ? 'bg-white/10' : 'bg-gray-100'} rounded-lg overflow-hidden flex-shrink-0`}>
-                      <img
-                        src={item.imageUrl}
-                        alt={item.title}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h4 className={`font-medium ${isDark ? 'text-white' : 'text-earth-brown'} truncate`}>{item.title}{item.size ? ` (${item.size})` : ''}</h4>
-                      <p className={`text-sm ${isDark ? 'text-white/70' : 'text-earth-brown/70'}`}>
-                        Quantity: {item.quantity}
-                      </p>
-                      <p className="text-sm font-medium text-earth-terracotta">
-                        ₹{item.price} × {item.quantity} = ₹{(item.price * item.quantity).toLocaleString()}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-
-            <div className="space-y-6">
-              <Card className={isDark ? 'bg-black/50 border-white/10' : ''}>
-                <CardHeader>
-                  <CardTitle className={`${isDark ? 'text-white' : 'text-earth-brown'} flex items-center`}>
-                    <MapPin className="h-5 w-5 mr-2" />
-                    Shipping Address
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className={`space-y-1 ${isDark ? 'text-white/80' : 'text-earth-brown/80'}`}>
-                    <p className={`font-medium ${isDark ? 'text-white' : 'text-earth-brown'}`}>{order.shippingAddress.name}</p>
-                    <p>{order.shippingAddress.phone}</p>
-                    <p>{order.shippingAddress.street}</p>
-                    <p>
-                      {order.shippingAddress.city}, {order.shippingAddress.state}
-                    </p>
-                    <p>{order.shippingAddress.pincode}</p>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className={isDark ? 'bg-black/50 border-white/10' : ''}>
-                <CardHeader>
-                  <CardTitle className={isDark ? 'text-white' : 'text-earth-brown'}>Order Summary</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className={`flex justify-between ${isDark ? 'text-white' : ''}`}>
-                    <span>Subtotal ({order.items.length} items)</span>
-                    <span>₹{order.totalAmount.toLocaleString()}</span>
-                  </div>
-                  <div className={`flex justify-between ${isDark ? 'text-white' : ''}`}>
-                    <span>Shipping</span>
-                    <span className="text-green-600">Free</span>
-                  </div>
-                  <div className={`border-t ${isDark ? 'border-white/10' : ''} pt-3`}>
-                    <div className={`flex justify-between text-lg font-bold ${isDark ? 'text-white' : ''}`}>
-                      <span>Total</span>
-                      <span className="text-earth-terracotta">₹{order.totalAmount.toLocaleString()}</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className={isDark ? 'bg-black/50 border-white/10' : ''}>
-                <CardHeader>
-                  <CardTitle className={isDark ? 'text-white' : 'text-earth-brown'}>Payment Information</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    <div className={`flex justify-between ${isDark ? 'text-white' : ''}`}>
-                      <span>Payment Method:</span>
-                      <span className="font-medium">{order.paymentMethod}</span>
-                    </div>
-                    <div className={`flex justify-between ${isDark ? 'text-white' : ''}`}>
-                      <span>Payment Status:</span>
-                      <span className="font-medium text-orange-600">Pending (COD)</span>
-                    </div>
-                  </div>
-                  <p className={`text-sm ${isDark ? 'text-white/70' : 'text-earth-brown/70'} mt-3`}>
-                    Payment will be collected when your order is delivered.
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <div className="flex flex-wrap items-center gap-3">
+            <h1 className="num text-3xl sm:text-4xl">Order #{order._id.slice(-8).toUpperCase()}</h1>
+            <StatusBadge status={order.status} />
           </div>
+          <p className="mt-2 text-muted-foreground">Placed on {formatDate(order.createdAt)}</p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {canCancel && (
+            <Button variant="outline" onClick={() => setConfirmOpen(true)} className="text-destructive hover:bg-destructive-soft">
+              <XCircle className="h-4 w-4" /> Cancel order
+            </Button>
+          )}
+          {returnable && (
+            <Button variant="outline" onClick={handleReturn}>
+              <RotateCcw className="h-4 w-4" /> Start a return
+            </Button>
+          )}
         </div>
       </div>
+
+      <section className="mt-8 rounded-xl border border-border bg-card p-5 shadow-soft sm:p-6" aria-label="Order tracking">
+        {cancelled ? (
+          <div className="flex items-start gap-3">
+            <XCircle className="mt-0.5 h-5 w-5 shrink-0 text-destructive" aria-hidden="true" />
+            <div>
+              <p className="font-semibold">This order was cancelled</p>
+              <p className="text-sm text-muted-foreground">Items have been returned to stock. No payment was collected.</p>
+            </div>
+          </div>
+        ) : (
+          <>
+            <Tracker status={order.status} />
+            {returnable && (
+              <p className="mt-6 rounded-lg bg-success-soft px-4 py-3 text-sm text-success">
+                This order is eligible for return within {RETURN_WINDOW_DAYS} days of delivery.
+              </p>
+            )}
+          </>
+        )}
+      </section>
+
+      <div className="mt-6 grid items-start gap-6 lg:grid-cols-[1.4fr_1fr]">
+        <section className="rounded-xl border border-border bg-card shadow-soft" aria-labelledby="items-heading">
+          <h2 id="items-heading" className="px-5 pt-5 font-sans text-lg font-semibold tracking-normal sm:px-6 sm:pt-6">
+            Items ({order.items.length})
+          </h2>
+          <ul className="mt-2 divide-y divide-border px-5 pb-2 sm:px-6">
+            {order.items.map((item, index) => (
+              <li key={index} className="flex items-center gap-4 py-4">
+                <img src={item.imageUrl} alt="" className="h-16 w-16 shrink-0 rounded-lg bg-muted object-cover" />
+                <div className="min-w-0 flex-1">
+                  <p className="font-medium leading-snug">{item.title}</p>
+                  <p className="num text-sm text-muted-foreground">
+                    {item.size ? `Size ${item.size} · ` : ''}Qty {item.quantity} × <Price value={item.price} className="font-normal" />
+                  </p>
+                </div>
+                <Price value={item.price * item.quantity} />
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        <div className="space-y-6">
+          <section className="rounded-xl border border-border bg-card p-5 shadow-soft sm:p-6" aria-labelledby="ship-heading">
+            <h2 id="ship-heading" className="flex items-center gap-2 font-sans text-lg font-semibold tracking-normal">
+              <MapPin className="h-4 w-4 text-primary" aria-hidden="true" /> Delivery address
+            </h2>
+            <address className="mt-3 space-y-0.5 text-sm not-italic text-muted-foreground">
+              <p className="font-medium text-foreground">{address.name}</p>
+              <p className="num">{address.phone}</p>
+              <p>{address.street}</p>
+              <p>{address.city}, {address.state} {address.pincode}</p>
+            </address>
+          </section>
+
+          <section className="rounded-xl border border-border bg-card p-5 shadow-soft sm:p-6" aria-labelledby="pay-heading">
+            <h2 id="pay-heading" className="font-sans text-lg font-semibold tracking-normal">Payment</h2>
+            <dl className="mt-4 space-y-3 text-sm">
+              <div className="flex justify-between"><dt className="text-muted-foreground">Method</dt><dd className="font-medium">{order.paymentMethod === 'COD' ? 'Cash on delivery' : order.paymentMethod}</dd></div>
+              <div className="flex justify-between"><dt className="text-muted-foreground">Subtotal</dt><dd><Price value={order.totalAmount} className="font-medium" /></dd></div>
+              <div className="flex justify-between"><dt className="text-muted-foreground">Shipping</dt><dd className="font-medium text-success">Free</dd></div>
+              <div className="flex items-baseline justify-between border-t border-border pt-4">
+                <dt className="text-base font-semibold">Total</dt>
+                <dd><Price value={order.totalAmount} className="text-2xl" /></dd>
+              </div>
+            </dl>
+            {!cancelled && order.status !== 'Delivered' && (
+              <p className="mt-4 text-sm text-muted-foreground">Payment will be collected when your order is delivered.</p>
+            )}
+          </section>
+        </div>
+      </div>
+
+      <ConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title="Cancel this order?"
+        description="This can't be undone. Items go back into stock and nothing will be charged."
+        confirmLabel="Cancel order"
+        cancelLabel="Keep order"
+        destructive
+        loading={cancelling}
+        onConfirm={handleCancel}
+      />
     </div>
   );
 };

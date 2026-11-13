@@ -1,51 +1,95 @@
+@import '@fontsource/young-serif/400.css';
+@import '@fontsource-variable/hanken-grotesk/wght.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/*
+  House of Homegrown design tokens.
+  Warm paper surfaces, deep walnut ink, one terracotta voice, sage for confirmation.
+  All colours are HSL channels so Tailwind can apply opacity (bg-primary/10).
+*/
 @layer base {
   :root {
-    --background: 30 20% 97%;
-    --foreground: 30 10% 15%;
-    --card: 30 20% 95%;
-    --card-foreground: 30 10% 15%;
-    --popover: 30 20% 95%;
-    --popover-foreground: 30 10% 15%;
-    --primary: 25 35% 55%;
-    --primary-foreground: 30 20% 97%;
-    --secondary: 30 15% 85%;
-    --secondary-foreground: 30 10% 15%;
-    --muted: 30 15% 90%;
-    --muted-foreground: 30 8% 45%;
-    --accent: 85 25% 65%;
-    --accent-foreground: 30 10% 15%;
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 30 15% 85%;
-    --input: 30 15% 85%;
-    --ring: 25 35% 55%;
-    --radius: 0.5rem;
+    color-scheme: light;
+
+    --background: 38 36% 95%;
+    --foreground: 22 32% 13%;
+
+    --surface: 40 45% 99%;          /* cards, inputs, popovers */
+    --card: 40 45% 99%;
+    --card-foreground: 22 32% 13%;
+    --popover: 40 45% 99%;
+    --popover-foreground: 22 32% 13%;
+
+    --primary: 17 54% 38%;          /* deep terracotta, white text 6.5:1 */
+    --primary-hover: 17 56% 32%;
+    --primary-foreground: 40 45% 99%;
+
+    --secondary: 35 32% 90%;
+    --secondary-foreground: 22 32% 18%;
+    --muted: 35 26% 91%;
+    --muted-foreground: 25 14% 36%; /* 6:1 on background */
+    --accent: 96 22% 86%;           /* sage wash */
+    --accent-foreground: 100 28% 20%;
+
+    --success: 140 42% 26%;
+    --success-soft: 138 32% 90%;
+    --warning: 30 88% 30%;
+    --warning-soft: 38 92% 88%;
+    --info: 208 50% 30%;
+    --info-soft: 208 55% 91%;
+    --destructive: 4 66% 40%;
+    --destructive-soft: 4 70% 94%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 33 22% 84%;
+    --input: 32 20% 76%;
+    --ring: 17 54% 38%;
+    --radius: 0.625rem;
+
+    --shadow-color: 22 40% 15%;
   }
 
   .dark {
-    --background: 180 2% 12%;
-    --foreground: 30 20% 95%;
-    --card: 180 2% 14%;
-    --card-foreground: 30 20% 95%;
-    --popover: 180 2% 14%;
-    --popover-foreground: 30 20% 95%;
-    --primary: 25 35% 55%;
-    --primary-foreground: 30 20% 97%;
-    --secondary: 180 2% 16%;
-    --secondary-foreground: 30 20% 95%;
-    --muted: 180 2% 16%;
-    --muted-foreground: 30 8% 65%;
-    --accent: 85 25% 65%;
-    --accent-foreground: 30 10% 15%;
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 180 2% 18%;
-    --input: 180 2% 18%;
-    --ring: 25 35% 55%;
+    color-scheme: dark;
+
+    --background: 22 16% 8%;
+    --foreground: 36 28% 92%;
+
+    --surface: 22 14% 11%;
+    --card: 22 14% 11%;
+    --card-foreground: 36 28% 92%;
+    --popover: 22 14% 12%;
+    --popover-foreground: 36 28% 92%;
+
+    --primary: 17 58% 58%;
+    --primary-hover: 17 62% 65%;
+    --primary-foreground: 22 40% 8%;
+
+    --secondary: 22 12% 16%;
+    --secondary-foreground: 36 28% 92%;
+    --muted: 22 12% 15%;
+    --muted-foreground: 32 14% 68%;
+    --accent: 100 16% 20%;
+    --accent-foreground: 96 30% 82%;
+
+    --success: 140 40% 68%;
+    --success-soft: 140 24% 16%;
+    --warning: 38 90% 66%;
+    --warning-soft: 34 50% 15%;
+    --info: 208 70% 76%;
+    --info-soft: 208 35% 17%;
+    --destructive: 4 80% 68%;
+    --destructive-soft: 4 40% 17%;
+    --destructive-foreground: 22 40% 8%;
+
+    --border: 24 10% 20%;
+    --input: 24 9% 28%;
+    --ring: 17 58% 58%;
+
+    --shadow-color: 0 0% 0%;
   }
 }
 
@@ -53,70 +97,176 @@
   * {
     @apply border-border;
   }
-  body {
-    @apply bg-background text-foreground;
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    scroll-padding-top: 5.5rem;
   }
-  
-  .dark body {
-    background-image: url('/background.png');
-    background-size: cover;
-    background-attachment: fixed;
-    background-position: center;
+
+  body {
+    @apply bg-background font-sans text-foreground antialiased;
+    font-feature-settings: 'ss01', 'cv11';
+    text-rendering: optimizeLegibility;
+  }
+
+  h1,
+  h2 {
+    @apply font-display font-normal tracking-tight;
+    text-wrap: balance;
+  }
+
+  h3,
+  h4 {
+    @apply font-semibold tracking-tight;
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  img {
+    @apply max-w-full;
+  }
+
+  /* Browser surfaces that otherwise ship as defaults */
+  ::selection {
+    background: hsl(var(--primary) / 0.22);
+    color: hsl(var(--foreground));
+  }
+
+  :focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  input,
+  textarea,
+  select {
+    caret-color: hsl(var(--primary));
+  }
+
+  input:-webkit-autofill {
+    -webkit-text-fill-color: hsl(var(--foreground));
+    box-shadow: 0 0 0 100px hsl(var(--surface)) inset;
+  }
+
+  input[type='number']::-webkit-inner-spin-button,
+  input[type='number']::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input[type='number'] {
+    -moz-appearance: textfield;
+  }
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--border)) transparent;
+  }
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--border));
+    border-radius: 999px;
+    border: 3px solid hsl(var(--background));
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground) / 0.5);
   }
 }
 
 @layer components {
-  .btn-primary {
-    @apply bg-earth-terracotta hover:bg-earth-brown text-white px-6 py-2 rounded-md transition-colors;
+  /* Tabular figures keep prices and quantities aligned in lists and totals */
+  .num {
+    font-variant-numeric: tabular-nums lining-nums;
   }
-  
-  .btn-secondary {
-    @apply bg-earth-sage hover:bg-earth-sage/80 text-white px-6 py-2 rounded-md transition-colors;
+
+  .page-container {
+    @apply mx-auto w-full max-w-[1280px] px-4 sm:px-6 lg:px-8;
+  }
+
+  .prose-copy {
+    @apply max-w-[68ch] text-[1.0625rem] leading-[1.75] text-foreground/90;
+  }
+  .prose-copy h2 {
+    @apply mb-3 mt-10 text-2xl;
+  }
+  .prose-copy h3 {
+    @apply mb-2 mt-6 text-lg;
+  }
+  .prose-copy p + p {
+    @apply mt-4;
+  }
+  .prose-copy ul {
+    @apply my-4 list-disc space-y-1.5 pl-5 marker:text-primary;
+  }
+  .prose-copy a {
+    @apply text-primary underline underline-offset-4 hover:text-primary-hover;
   }
 }
 
 @layer utilities {
-  .animate-spin-slow {
-    animation: spin 20s linear infinite;
+  .text-balance {
+    text-wrap: balance;
   }
-  
-  .animate-bounce-slow {
-    animation: bounce 3s ease-in-out infinite;
+
+  /* Soft, offset, layered shadows tinted with the ink colour */
+  .shadow-soft {
+    box-shadow:
+      0 1px 2px hsl(var(--shadow-color) / 0.06),
+      0 2px 6px hsl(var(--shadow-color) / 0.04);
   }
-  
-  .animate-float {
-    animation: float 6s ease-in-out infinite;
+  .shadow-lift {
+    box-shadow:
+      0 2px 4px hsl(var(--shadow-color) / 0.05),
+      0 12px 28px -6px hsl(var(--shadow-color) / 0.14);
   }
-  
-  @keyframes spin {
-    from {
-      transform: rotate(0deg);
-    }
-    to {
-      transform: rotate(360deg);
-    }
+  .shadow-float {
+    box-shadow:
+      0 4px 8px hsl(var(--shadow-color) / 0.06),
+      0 24px 48px -12px hsl(var(--shadow-color) / 0.24);
   }
-  
-  @keyframes bounce {
-    0%, 100% {
-      transform: translateY(0);
-      animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
-    }
-    50% {
-      transform: translateY(-10px);
-      animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
-    }
+
+  .skeleton {
+    @apply relative overflow-hidden rounded-md bg-muted;
   }
-  
-  @keyframes float {
-    0%, 100% {
-      transform: translateY(0px) rotate(0deg);
-    }
-    33% {
-      transform: translateY(-8px) rotate(2deg);
-    }
-    66% {
-      transform: translateY(-4px) rotate(-1deg);
-    }
+  .skeleton::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(90deg, transparent, hsl(var(--foreground) / 0.06), transparent);
+    animation: shimmer 1.6s ease-in-out infinite;
+  }
+
+  .scrollbar-none {
+    scrollbar-width: none;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@keyframes shimmer {
+  to {
+    transform: translateX(100%);
+  }
+}
+
+/* Reduced motion keeps state changes visible but removes travel and looping */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+  }
+  .skeleton::after {
+    animation: none;
   }
 }

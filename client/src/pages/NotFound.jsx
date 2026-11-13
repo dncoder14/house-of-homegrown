@@ -1,19 +1,24 @@
 import { Link } from 'react-router-dom';
+import { Compass } from 'lucide-react';
 import { Button } from '../components/ui/button';
-import { useTheme } from '../context/ThemeContext';
+import { EmptyState } from '../components/ui/empty-state';
 import usePageTitle from '../hooks/usePageTitle';
 
 const NotFound = () => {
-  const { isDark } = useTheme();
   usePageTitle('Page not found');
-
   return (
-    <div className={`min-h-[60vh] ${isDark ? 'bg-background' : 'bg-earth-cream/30'} flex items-center justify-center px-4`}>
-      <div className="text-center">
-        <h1 className={`text-6xl font-bold ${isDark ? 'text-white' : 'text-earth-brown'} mb-2`}>404</h1>
-        <p className={`${isDark ? 'text-white/70' : 'text-earth-brown/70'} mb-6`}>We couldn't find the page you were looking for.</p>
-        <Link to="/shop"><Button size="lg">Continue Shopping</Button></Link>
-      </div>
+    <div className="page-container py-16 sm:py-24">
+      <EmptyState
+        icon={Compass}
+        title="We couldn't find that page"
+        description="The link may be out of date, or the page may have moved."
+        action={
+          <>
+            <Button asChild size="lg"><Link to="/shop">Browse the shop</Link></Button>
+            <Button asChild size="lg" variant="outline"><Link to="/">Go home</Link></Button>
+          </>
+        }
+      />
     </div>
   );
 };

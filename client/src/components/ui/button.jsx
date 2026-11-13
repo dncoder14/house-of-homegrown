@@ -1,28 +1,28 @@
 import * as React from "react"
 import { Slot } from "@radix-ui/react-slot"
 import { cva } from "class-variance-authority"
+import { Loader2 } from "lucide-react"
 import { cn } from "../../lib/utils"
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-semibold transition-[background-color,color,border-color,box-shadow,transform] duration-150 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 [&_svg]:shrink-0",
   {
     variants: {
       variant: {
-        default: "bg-earth-terracotta text-white hover:bg-earth-terracotta/90 dark:bg-earth-terracotta dark:text-white dark:hover:bg-earth-terracotta/90",
-        destructive:
-          "bg-red-600 text-white hover:bg-red-700 dark:bg-red-600 dark:text-white dark:hover:bg-red-700",
-        outline:
-          "border border-earth-brown/20 bg-transparent text-earth-brown hover:bg-earth-cream hover:text-earth-brown dark:border-white/20 dark:text-white dark:hover:bg-white/10 dark:hover:text-white",
-        secondary:
-          "bg-earth-sage text-white hover:bg-earth-sage/80 dark:bg-earth-sage dark:text-white dark:hover:bg-earth-sage/80",
-        ghost: "text-earth-brown hover:bg-earth-cream hover:text-earth-brown dark:text-white dark:hover:bg-white/10 dark:hover:text-white",
-        link: "text-earth-terracotta underline-offset-4 hover:underline dark:text-earth-terracotta",
+        default: "bg-primary text-primary-foreground shadow-soft hover:bg-primary-hover",
+        destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90",
+        outline: "border border-input bg-surface text-foreground hover:bg-muted",
+        secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/70",
+        ghost: "text-foreground hover:bg-muted",
+        link: "h-auto rounded-sm p-0 text-primary underline-offset-4 hover:underline active:scale-100",
+        subtle: "bg-primary/10 text-primary hover:bg-primary/15",
       },
       size: {
-        default: "h-10 px-4 py-2",
-        sm: "h-9 rounded-md px-3",
-        lg: "h-11 rounded-md px-8",
-        icon: "h-10 w-10",
+        default: "h-11 px-5",
+        sm: "h-9 px-3.5 text-[0.8125rem]",
+        lg: "h-12 px-7 text-base",
+        icon: "h-11 w-11",
+        "icon-sm": "h-9 w-9",
       },
     },
     defaultVariants: {
@@ -32,16 +32,29 @@ const buttonVariants = cva(
   }
 )
 
-const Button = React.forwardRef(({ className, variant, size, asChild = false, ...props }, ref) => {
-  const Comp = asChild ? Slot : "button"
-  return (
-    <Comp
-      className={cn(buttonVariants({ variant, size, className }))}
-      ref={ref}
-      {...props}
-    />
-  )
-})
+const Button = React.forwardRef(
+  ({ className, variant, size, asChild = false, loading = false, children, disabled, ...props }, ref) => {
+    const Comp = asChild ? Slot : "button"
+    return (
+      <Comp
+        className={cn(buttonVariants({ variant, size, className }))}
+        ref={ref}
+        disabled={disabled || loading}
+        aria-busy={loading || undefined}
+        {...props}
+      >
+        {asChild ? (
+          children
+        ) : (
+          <>
+            {loading && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
+            {children}
+          </>
+        )}
+      </Comp>
+    )
+  }
+)
 Button.displayName = "Button"
 
 export { Button, buttonVariants }

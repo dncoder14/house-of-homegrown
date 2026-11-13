@@ -1,9 +1,9 @@
-import { Link } from 'react-router-dom';
-import { useTheme } from '../context/ThemeContext';
+import CategoryTile from '../components/CategoryTile';
+import { PageHeader } from '../components/ui/page-header';
+import { Breadcrumbs } from '../components/ui/breadcrumbs';
 import usePageTitle from '../hooks/usePageTitle';
 
 const Categories = () => {
-  const { isDark } = useTheme();
   usePageTitle('Categories');
 
   const categoryRows = [
@@ -49,69 +49,26 @@ const Categories = () => {
   ];
 
   return (
-    <div className={`min-h-screen ${isDark ? 'bg-background' : 'bg-earth-cream/30'} relative overflow-hidden`}>
-      {/* Decorative Rangoli Patterns - Symmetrical Layout */}
-      <div className="absolute inset-0 pointer-events-none">
-        {/* Top corners - both pattern1 with same animation */}
-        <img 
-          src="/pattern1.png" 
-          alt="" 
-          className="absolute top-20 left-20 w-14 h-14 opacity-12 animate-spin-slow"
-        />
-        <img 
-          src="/pattern1.png" 
-          alt="" 
-          className="absolute top-20 right-20 w-14 h-14 opacity-12 animate-spin-slow"
-        />
-        {/* Bottom corners - both pattern3 with same animation */}
-        <img 
-          src="/pattern3.png" 
-          alt="" 
-          className="absolute bottom-20 left-20 w-10 h-10 opacity-8 animate-float"
-        />
-        <img 
-          src="/pattern3.png" 
-          alt="" 
-          className="absolute bottom-20 right-20 w-10 h-10 opacity-8 animate-float"
-        />
-      </div>
-      <div className="container mx-auto px-4 py-8 md:py-12">
-        <div className="text-center mb-8 md:mb-12">
-          <h1 className={`text-3xl md:text-4xl font-bold ${isDark ? 'text-white' : 'text-earth-brown'} mb-4`}>
-            Explore Indian Heritage
-          </h1>
-          <p className={`text-base md:text-xl ${isDark ? 'text-white/70' : 'text-earth-brown/70'} max-w-3xl mx-auto px-4`}>
-            Discover authentic Indian products celebrating "Roti, Kapda aur Makan" - the essence of Indian living.
-          </p>
-        </div>
+    <div className="page-container py-8 sm:py-12">
+      <Breadcrumbs items={[{ label: 'Home', to: '/' }, { label: 'Categories' }]} className="mb-6" />
+      <PageHeader
+        title="Explore Indian heritage"
+        description={'Authentic products celebrating "Roti, Kapda aur Makan", the essence of Indian living.'}
+      />
 
-        <div className="space-y-12 md:space-y-16">
-          {categoryRows.map((row, rowIndex) => (
-            <div key={rowIndex}>
-              <h2 className={`text-xl md:text-2xl font-bold ${isDark ? 'text-white' : 'text-earth-brown'} mb-6 md:mb-8 text-center`}>
-                {row.title}
-              </h2>
-              <div className="grid grid-cols-4 md:grid-cols-8 gap-4 md:gap-6">
-                {row.categories.map((category, index) => (
-                  <Link key={index} to={category.link} className="group">
-                    <div className="flex flex-col items-center">
-                      <div className="w-16 h-16 md:w-20 md:h-20 lg:w-24 lg:h-24 mb-2 md:mb-3 group-hover:scale-110 transition-transform duration-300">
-                        <img
-                          src={category.image}
-                          alt={category.name}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                      <span className={`text-xs md:text-sm font-medium text-center ${isDark ? 'text-white/80 group-hover:text-white' : 'text-earth-brown group-hover:text-earth-terracotta'} transition-colors leading-tight`}>
-                        {category.name}
-                      </span>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
+      <div className="mt-12 space-y-14">
+        {categoryRows.map((row) => (
+          <section key={row.title} aria-labelledby={`cat-${row.title}`}>
+            <h2 id={`cat-${row.title}`} className="mb-5 text-2xl">{row.title}</h2>
+            <ul className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-8 lg:gap-4">
+              {row.categories.map((category) => (
+                <li key={category.name}>
+                  <CategoryTile name={category.name} image={category.image} to={category.link} />
+                </li>
+              ))}
+            </ul>
+          </section>
+        ))}
       </div>
     </div>
   );

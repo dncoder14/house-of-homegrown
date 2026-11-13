@@ -1,109 +1,104 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Star, ShoppingCart, Check } from 'lucide-react';
-import { Card, CardContent, CardFooter } from './ui/card';
-import { Button } from './ui/button';
+import { Star, Plus, Check, Ruler } from 'lucide-react';
 import { Badge } from './ui/badge';
+import { Price } from './ui/price';
 import { useCart } from '../context/CartContext';
-import { useAuth } from '../context/AuthContext';
-import { useTheme } from '../context/ThemeContext';
 import toast from 'react-hot-toast';
 
 const ProductCard = ({ product }) => {
   const { addToCart } = useCart();
-  const { isAuthenticated } = useAuth();
-  const { isDark } = useTheme();
-  const [isAdded, setIsAdded] = useState(false);
   const navigate = useNavigate();
-  const isClothing = product.category === 'clothing';
-  const outOfStock = isClothing ? product.totalStock === 0 : (product.stock ?? 0) === 0;
+  const [isAdded, setIsAdded] = useState(false);
+  const timer = useRef();
+  useEffect(() => () => clearTimeout(timer.current), []);
 
-  const handleAddToCart = (e) => {
-    e.preventDefault();
+  const isClothing = product.category === 'clothing';
+  const inStockSizes = (product.sizes || []).filter((s) => s.stock > 0);
+  const outOfStock = isClothing ? product.totalStock === 0 : (product.stock ?? 0) === 0;
+  const lowStock = !outOfStock && !isClothing && product.stock < 10;
+  const needsSize = isClothing && inStockSizes.length !== 1;
+
+  const handleAddToCart = () => {
     if (outOfStock) return;
 
-    let size = '';
-    if (isClothing) {
-      const sizes = (product.sizes || []).filter((s) => s.stock > 0);
-      if (sizes.length !== 1) {
-        toast('Please choose a size', { icon: '👕' });
-        navigate(`/product/${product.id}`);
-        return;
-      }
-      size = sizes[0].size;
+    if (needsSize) {
+      toast('Choose a size to add this item');
+      navigate(`/product/${product.id}`);
+      return;
     }
 
+    const size = isClothing ? inStockSizes[0].size : '';
     const result = addToCart(product, 1, size);
     if (!result.ok) {
       toast.error(result.reason === 'out_of_stock' ? 'This item is out of stock' : `Maximum available (${result.available}) already in your cart`);
       return;
     }
     setIsAdded(true);
-    toast.success(`${product.title} added to cart!`);
-    setTimeout(() => setIsAdded(false), 2000);
+    toast.success(`${product.title} added to cart`);
+    clearTimeout(timer.current);
+    timer.current = setTimeout(() => setIsAdded(false), 1800);
   };
 
+  const actionLabel = needsSize ? `Choose size for ${product.title}` : `Add ${product.title} to cart`;
+
   return (
-    <Link to={`/product/${product.id}`}>
-      <Card className="group hover:shadow-lg transition-shadow duration-300 overflow-hidden bg-card border-border">
-        <div className="aspect-square overflow-hidden">
-          <img
-            src={product.imageUrl}
-            alt={product.title}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-          />
-        </div>
-        <CardContent className="p-3 md:p-4">
-          <div className="flex items-center justify-between mb-1 md:mb-2">
-            <Badge variant="secondary" className="text-xs">
-              {product.category}
-            </Badge>
-            {product.rating > 0 && (
-              <div className="flex items-center space-x-1">
-                <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                <span className="text-xs text-muted-foreground">{product.rating}</span>
-              </div>
-            )}
-          </div>
-          <h3 className="font-semibold text-sm md:text-base mb-1 md:mb-2 line-clamp-2 text-card-foreground leading-tight">{product.title}</h3>
-          <p className="text-xs text-muted-foreground mb-2 md:mb-3 line-clamp-2 hidden md:block">{product.description}</p>
-          <div className="flex items-center justify-between">
-            <span className="text-base md:text-lg font-bold text-earth-terracotta">₹{product.price}</span>
+    <article className="group relative flex h-full flex-col overflow-hidden rounded-xl border border-border bg-card shadow-soft transition-[box-shadow,transform,border-color] duration-300 ease-out hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-lift">
+      <div className="relative aspect-[4/5] overflow-hidden bg-muted">
+        <img
+          src={product.imageUrl}
+          alt=""
+          loading="lazy"
+          className={`h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.04] ${outOfStock ? 'opacity-60 grayscale-[40%]' : ''}`}
+        />
+        {(outOfStock || lowStock) && (
+          <div className="absolute left-3 top-3">
             {outOfStock ? (
-              <span className="text-xs text-red-600">Out of stock</span>
-            ) : !isClothing && product.stock < 10 ? (
-              <span className="text-xs text-orange-600">Only {product.stock} left</span>
-            ) : null}
-          </div>
-        </CardContent>
-        <CardFooter className="p-3 md:p-4 pt-0">
-          <Button
-            onClick={handleAddToCart}
-            disabled={outOfStock}
-            className={`w-full transition-all duration-300 text-xs md:text-sm py-2 ${
-              isAdded 
-                ? 'bg-green-600 hover:bg-green-700 text-white' 
-                : ''
-            }`}
-            size="sm"
-          >
-            {isAdded ? (
-              <>
-                <Check className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
-                Added!
-              </>
-            ) : outOfStock ? (
-              'Out of Stock'
+              <Badge variant="muted" className="bg-background/90 backdrop-blur">Sold out</Badge>
             ) : (
-              <>
-                <ShoppingCart className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
-                {isClothing && (product.sizes || []).filter((s) => s.stock > 0).length !== 1 ? 'Select Size' : 'Add to Cart'}
-              </>
+              <Badge variant="warning">Only {product.stock} left</Badge>
             )}
-          </Button>
-        </CardFooter>
-      </Card>
-    </Link>
+          </div>
+        )}
+      </div>
+
+      <div className="flex flex-1 flex-col p-3.5 sm:p-4">
+        <div className="mb-1 flex items-center justify-between gap-2 text-xs text-muted-foreground">
+          <span className="truncate capitalize">{product.subcategory?.replace(/-/g, ' ') || product.category}</span>
+          {product.rating > 0 && (
+            <span className="num flex shrink-0 items-center gap-1" aria-label={`Rated ${product.rating} out of 5`}>
+              <Star className="h-3.5 w-3.5 fill-warning text-warning" aria-hidden="true" />
+              {product.rating}
+            </span>
+          )}
+        </div>
+
+        <h3 className="line-clamp-2 min-h-[2.5rem] text-[0.9375rem] font-semibold leading-5">
+          <Link to={`/product/${product.id}`} className="rounded-sm before:absolute before:inset-0 before:z-0 focus-visible:outline-none focus-visible:before:rounded-xl focus-visible:before:ring-2 focus-visible:before:ring-ring">
+            {product.title}
+          </Link>
+        </h3>
+
+        <div className="mt-auto flex min-h-[2.5rem] items-center justify-between pt-3 box-content">
+          <Price value={product.price} className="text-lg" />
+          {!outOfStock && (
+            <button
+              type="button"
+              onClick={handleAddToCart}
+              aria-label={actionLabel}
+              title={needsSize ? 'Choose size' : 'Add to cart'}
+              className={`relative z-10 flex h-10 w-10 items-center justify-center rounded-full transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-card active:scale-90 ${
+                isAdded
+                  ? 'bg-success text-background'
+                  : 'bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground'
+              }`}
+            >
+              {isAdded ? <Check className="h-4 w-4" /> : needsSize ? <Ruler className="h-4 w-4" /> : <Plus className="h-[1.125rem] w-[1.125rem]" />}
+            </button>
+          )}
+        </div>
+      </div>
+    </article>
   );
 };
 

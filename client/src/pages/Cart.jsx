@@ -1,18 +1,19 @@
 import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Trash2, Plus, Minus, ShoppingBag } from 'lucide-react';
+import { ShoppingBag, Trash2, Truck, ShieldCheck, ArrowRight } from 'lucide-react';
 import { Button } from '../components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import { useCart } from '../context/CartContext';
+import { Price } from '../components/ui/price';
+import { PageHeader } from '../components/ui/page-header';
+import { EmptyState } from '../components/ui/empty-state';
+import { QuantityStepper } from '../components/ui/quantity-stepper';
+import { MAX_LINE_QUANTITY, useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
-import { useTheme } from '../context/ThemeContext';
 import usePageTitle from '../hooks/usePageTitle';
 
 const Cart = () => {
   const { cart, updateQuantity, removeFromCart, refreshCart, getTotalPrice, getTotalItems } = useCart();
   const { isAuthenticated } = useAuth();
-  const { isDark } = useTheme();
-  usePageTitle('Your Cart');
+  usePageTitle('Your cart');
 
   useEffect(() => {
     refreshCart();
@@ -20,134 +21,113 @@ const Cart = () => {
 
   if (cart.length === 0) {
     return (
-      <div className={`min-h-screen ${isDark ? 'bg-black' : 'bg-earth-cream/30'} flex items-center justify-center`}>
-        <div className="text-center">
-          <ShoppingBag className={`h-24 w-24 ${isDark ? 'text-white/30' : 'text-earth-brown/30'} mx-auto mb-4`} />
-          <h2 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-earth-brown'} mb-2`}>Your cart is empty</h2>
-          <p className={`${isDark ? 'text-white/70' : 'text-earth-brown/70'} mb-6`}>Add some products to get started</p>
-          <Link to="/shop">
-            <Button size="lg">Continue Shopping</Button>
-          </Link>
-        </div>
+      <div className="page-container py-12 sm:py-20">
+        <EmptyState
+          icon={ShoppingBag}
+          title="Your cart is empty"
+          description="Find something handmade and it will wait for you here."
+          action={<Button asChild size="lg"><Link to="/shop">Start shopping</Link></Button>}
+        />
       </div>
     );
   }
 
+  const itemCount = getTotalItems();
+  const total = getTotalPrice();
+
   return (
-    <div className={`min-h-screen ${isDark ? 'bg-black' : 'bg-earth-cream/30'}`}>
-      <div className="container mx-auto px-4 py-8">
-        <h1 className={`text-3xl font-bold ${isDark ? 'text-white' : 'text-earth-brown'} mb-8`}>Shopping Cart</h1>
-        
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2 space-y-4">
-            {cart.map((item) => (
-              <Card key={item.key} className={`${isDark ? 'bg-black/50 border-white/10' : 'bg-white border-earth-beige'}`}>
-                <CardContent className="p-6">
-                  <div className="flex flex-col sm:flex-row gap-4">
-                    <div className="w-full sm:w-24 h-24 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
-                      <img
-                        src={item.imageUrl}
-                        alt={item.title}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    
-                    <div className="flex-1 space-y-2">
-                      <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-earth-brown'}`}>{item.title}</h3>
-                      <p className={`text-sm ${isDark ? 'text-white/70' : 'text-earth-brown/70'} capitalize`}>
-                        {item.category}{item.size ? ` • Size: ${item.size}` : ''}
-                      </p>
-                      <p className="text-lg font-bold text-earth-terracotta">₹{item.price.toLocaleString()}</p>
-                    </div>
-                    
-                    <div className="flex flex-col sm:items-end space-y-2">
-                      <div className="flex items-center space-x-2">
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          onClick={() => updateQuantity(item.key, item.quantity - 1)}
-                          className="h-8 w-8"
-                        >
-                          <Minus className="h-3 w-3" />
-                        </Button>
-                        <span className="w-8 text-center font-medium">{item.quantity}</span>
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          onClick={() => updateQuantity(item.key, item.quantity + 1)}
-                          disabled={item.quantity >= (item.stock || 20)}
-                          className="h-8 w-8"
-                        >
-                          <Plus className="h-3 w-3" />
-                        </Button>
-                      </div>
-                      
-                      <div className="flex items-center space-x-2">
-                        <span className={`font-bold ${isDark ? 'text-white' : 'text-earth-brown'}`}>
-                          ₹{(item.price * item.quantity).toLocaleString()}
-                        </span>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => removeFromCart(item.key)}
-                          className="h-8 w-8 text-red-500 hover:text-red-700"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-          
-          <div className="lg:col-span-1">
-            <Card className={`sticky top-24 ${isDark ? 'bg-black/50 border-white/10' : 'bg-white border-earth-beige'}`}>
-              <CardHeader>
-                <CardTitle className={`${isDark ? 'text-white' : 'text-earth-brown'}`}>Order Summary</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex justify-between">
-                  <span>Items ({getTotalItems()})</span>
-                  <span>₹{getTotalPrice().toLocaleString()}</span>
-                </div>
-                
-                <div className="flex justify-between">
-                  <span>Shipping</span>
-                  <span className="text-green-600">Free</span>
-                </div>
-                
-                <div className="border-t pt-4">
-                  <div className="flex justify-between text-lg font-bold">
-                    <span>Total</span>
-                    <span className="text-earth-terracotta">₹{getTotalPrice().toLocaleString()}</span>
-                  </div>
-                </div>
-                
-                {isAuthenticated ? (
-                  <Link to="/checkout" className="block">
-                    <Button className="w-full" size="lg">
-                      Proceed to Checkout
-                    </Button>
-                  </Link>
-                ) : (
-                  <Link to="/login" state={{ from: { pathname: '/checkout' } }} className="block">
-                    <Button className="w-full" size="lg">
-                      Login to Checkout
-                    </Button>
-                  </Link>
-                )}
-                
-                <Link to="/shop" className="block">
-                  <Button variant="outline" className="w-full">
-                    Continue Shopping
-                  </Button>
+    <div className="page-container py-8 sm:py-12">
+      <PageHeader title="Your cart" description={`${itemCount} ${itemCount === 1 ? 'item' : 'items'}`} />
+
+      <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_22rem] lg:items-start xl:grid-cols-[1fr_24rem]">
+        <ul className="divide-y divide-border overflow-hidden rounded-xl border border-border bg-card shadow-soft">
+          {cart.map((item) => {
+            const max = Math.min(item.stock || MAX_LINE_QUANTITY, MAX_LINE_QUANTITY);
+            return (
+              <li key={item.key} className="flex gap-4 p-4 sm:gap-5 sm:p-5">
+                <Link to={`/product/${item.id}`} className="h-24 w-24 shrink-0 overflow-hidden rounded-lg bg-muted sm:h-28 sm:w-28" tabIndex={-1} aria-hidden="true">
+                  <img src={item.imageUrl} alt="" className="h-full w-full object-cover" />
                 </Link>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
+
+                <div className="flex min-w-0 flex-1 flex-col">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <h2 className="font-sans text-[0.9375rem] font-semibold leading-snug tracking-normal">
+                        <Link to={`/product/${item.id}`} className="hover:text-primary">{item.title}</Link>
+                      </h2>
+                      <p className="mt-0.5 text-sm capitalize text-muted-foreground">
+                        {item.category}{item.size ? ` · Size ${item.size}` : ''}
+                      </p>
+                    </div>
+                    <Price value={item.price * item.quantity} className="shrink-0 text-base" />
+                  </div>
+
+                  <div className="mt-auto flex items-end justify-between gap-3 pt-3">
+                    <QuantityStepper
+                      size="sm"
+                      value={item.quantity}
+                      max={max}
+                      min={0}
+                      onChange={(next) => updateQuantity(item.key, next)}
+                      label={`Quantity for ${item.title}`}
+                    />
+                    <div className="flex items-center gap-3">
+                      {item.quantity > 1 && (
+                        <span className="num hidden text-[0.8125rem] text-muted-foreground sm:inline">
+                          <Price value={item.price} className="font-normal" /> each
+                        </span>
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeFromCart(item.key)}
+                        className="-mr-2 text-muted-foreground hover:text-destructive"
+                        aria-label={`Remove ${item.title} from cart`}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        <span className="hidden sm:inline">Remove</span>
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+
+        <aside className="rounded-xl border border-border bg-card p-5 shadow-soft sm:p-6 lg:sticky lg:top-24" aria-label="Order summary">
+          <h2 className="font-sans text-lg font-semibold tracking-normal">Order summary</h2>
+          <dl className="mt-5 space-y-3 text-sm">
+            <div className="flex justify-between">
+              <dt className="text-muted-foreground">Subtotal ({itemCount} {itemCount === 1 ? 'item' : 'items'})</dt>
+              <dd><Price value={total} className="font-medium" /></dd>
+            </div>
+            <div className="flex justify-between">
+              <dt className="text-muted-foreground">Shipping</dt>
+              <dd className="font-medium text-success">Free</dd>
+            </div>
+            <div className="flex items-baseline justify-between border-t border-border pt-4">
+              <dt className="text-base font-semibold">Total</dt>
+              <dd><Price value={total} className="text-2xl" /></dd>
+            </div>
+          </dl>
+
+          <Button asChild size="lg" className="mt-6 w-full">
+            {isAuthenticated ? (
+              <Link to="/checkout">Proceed to checkout <ArrowRight className="h-4 w-4" /></Link>
+            ) : (
+              <Link to="/login" state={{ from: { pathname: '/checkout' } }}>Log in to checkout <ArrowRight className="h-4 w-4" /></Link>
+            )}
+          </Button>
+          <Button asChild variant="ghost" className="mt-2 w-full">
+            <Link to="/shop">Continue shopping</Link>
+          </Button>
+
+          <ul className="mt-5 space-y-2.5 border-t border-border pt-5 text-[0.8125rem] text-muted-foreground">
+            <li className="flex items-center gap-2.5"><Truck className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />Delivered in 5–7 business days</li>
+            <li className="flex items-center gap-2.5"><ShieldCheck className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />Pay on delivery, 14-day returns</li>
+          </ul>
+        </aside>
       </div>
     </div>
   );
