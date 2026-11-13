@@ -1,6 +1,9 @@
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import usePageTitle from '../hooks/usePageTitle';
 
 const Terms = () => {
+  usePageTitle('Terms & Conditions');
+
   return (
     <div className="min-h-screen bg-earth-cream/30">
       <div className="container mx-auto px-4 py-12">

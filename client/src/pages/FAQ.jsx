@@ -2,9 +2,11 @@ import { useState } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { Card, CardContent } from '../components/ui/card';
 import { useTheme } from '../context/ThemeContext';
+import usePageTitle from '../hooks/usePageTitle';
 
 const FAQ = () => {
   const { isDark } = useTheme();
+  usePageTitle('FAQ');
   const [openItems, setOpenItems] = useState(new Set([0]));
 
   const toggleItem = (index) => {

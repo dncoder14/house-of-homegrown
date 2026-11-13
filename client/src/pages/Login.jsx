@@ -5,6 +5,7 @@ import { Input } from '../components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import usePageTitle from '../hooks/usePageTitle';
 import { authAPI } from '../utils/api';
 
 const Login = () => {
@@ -17,6 +18,7 @@ const Login = () => {
   
   const { login } = useAuth();
   const { isDark } = useTheme();
+  usePageTitle('Log in');
   const navigate = useNavigate();
   const location = useLocation();
   

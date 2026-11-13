@@ -4,10 +4,12 @@ import { CheckCircle, Package, ArrowRight } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card, CardContent } from '../components/ui/card';
 import { useTheme } from '../context/ThemeContext';
+import usePageTitle from '../hooks/usePageTitle';
 
 const OrderSuccess = () => {
   const location = useLocation();
   const { isDark } = useTheme();
+  usePageTitle('Order Confirmed');
   const orderId = location.state?.orderId;
 
   useEffect(() => {

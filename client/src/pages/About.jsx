@@ -1,9 +1,11 @@
 import { Leaf, Heart, Users, Award } from 'lucide-react';
 import { Card, CardContent } from '../components/ui/card';
 import { useTheme } from '../context/ThemeContext';
+import usePageTitle from '../hooks/usePageTitle';
 
 const About = () => {
   const { isDark } = useTheme();
+  usePageTitle('About Us');
   const values = [
     {
       icon: <Leaf className="h-8 w-8 text-earth-sage" />,

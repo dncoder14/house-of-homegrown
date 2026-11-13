@@ -1,7 +1,10 @@
 import { Truck, RotateCcw, Clock, Shield } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import usePageTitle from '../hooks/usePageTitle';
 
 const Shipping = () => {
+  usePageTitle('Shipping & Returns');
+
   const policies = [
     {
       icon: <Truck className="h-8 w-8 text-earth-sage" />,

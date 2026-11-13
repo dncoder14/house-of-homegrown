@@ -2,9 +2,11 @@ import { Phone, MessageCircle, Mail, MapPin, Clock, Headphones } from 'lucide-re
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { useTheme } from '../context/ThemeContext';
+import usePageTitle from '../hooks/usePageTitle';
 
 const Contact = () => {
   const { isDark } = useTheme();
+  usePageTitle('Contact Us');
 
   const contactMethods = [
     {

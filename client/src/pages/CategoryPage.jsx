@@ -3,6 +3,7 @@ import { useParams, useSearchParams, Link } from 'react-router-dom';
 import ProductCard from '../components/ProductCard';
 import { productsAPI } from '../utils/api';
 import { useTheme } from '../context/ThemeContext';
+import usePageTitle from '../hooks/usePageTitle';
 
 const CategoryPage = () => {
   const { category } = useParams();
@@ -10,6 +11,7 @@ const CategoryPage = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const { isDark } = useTheme();
+  usePageTitle('Browse');
   
   const selectedSubcategory = searchParams.get('subcategory') || '';
 

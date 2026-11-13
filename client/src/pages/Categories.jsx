@@ -1,8 +1,10 @@
 import { Link } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
+import usePageTitle from '../hooks/usePageTitle';
 
 const Categories = () => {
   const { isDark } = useTheme();
+  usePageTitle('Categories');
 
   const categoryRows = [
     {
